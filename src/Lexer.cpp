@@ -28,21 +28,53 @@ namespace interpreter
         case 0: utility::AssignToToken(token, TokenType::ENDF, "\0");
             return token;
             break;
-        case '=': utility::AssignToToken(token, TokenType::ASSIGN, &mChar);
+        case '=': 
+            if (PeekCharacter() == '=')
+            {
+                const std::string literal{ mChar,PeekCharacter()};
+                utility::AssignToToken(token, TokenType::EQ, literal);
+                AdvanceCharacter();
+            }
+            else
+            {
+                utility::AssignToToken(token, TokenType::ASSIGN, mChar);
+            }
             break;
-        case ';': utility::AssignToToken(token, TokenType::SEMICOLON, &mChar);
+        case '+': utility::AssignToToken(token, TokenType::PLUS, mChar);
             break;
-        case '(': utility::AssignToToken(token, TokenType::LPAREN, &mChar);
+        case '-': utility::AssignToToken(token, TokenType::MINUS, mChar);
             break;
-        case ')': utility::AssignToToken(token, TokenType::RPAREN, &mChar);
+        case '!': 
+            if (PeekCharacter() == '=')
+            {
+                const std::string literal{ mChar,PeekCharacter()};
+                utility::AssignToToken(token, TokenType::NOT_EQ,literal);
+                AdvanceCharacter();
+            }
+            else
+            {
+                utility::AssignToToken(token, TokenType::BANG, mChar);
+            }
             break;
-        case ',': utility::AssignToToken(token, TokenType::COMMA, &mChar);
+        case '/': utility::AssignToToken(token, TokenType::SLASH, mChar);
             break;
-        case '+': utility::AssignToToken(token, TokenType::PLUS, &mChar);
+        case '*': utility::AssignToToken(token, TokenType::ASTERISK, mChar);
             break;
-        case '{': utility::AssignToToken(token, TokenType::LBRACE, &mChar);
+        case '<': utility::AssignToToken(token, TokenType::LT, mChar);
             break;
-        case '}': utility::AssignToToken(token, TokenType::RBRACE, &mChar);
+        case '>': utility::AssignToToken(token, TokenType::GT, mChar);
+            break;
+        case ';': utility::AssignToToken(token, TokenType::SEMICOLON, mChar);
+            break;
+        case '(': utility::AssignToToken(token, TokenType::LPAREN, mChar);
+            break;
+        case ')': utility::AssignToToken(token, TokenType::RPAREN, mChar);
+            break;
+        case ',': utility::AssignToToken(token, TokenType::COMMA, mChar);
+            break;
+        case '{': utility::AssignToToken(token, TokenType::LBRACE, mChar);
+            break;
+        case '}': utility::AssignToToken(token, TokenType::RBRACE, mChar);
             break;
         default:
             if (utility::IsLetter(mChar))
@@ -59,7 +91,7 @@ namespace interpreter
             }
             else 
             {
-                utility::AssignToToken(token, TokenType::ILLEGAL, &mChar);
+                utility::AssignToToken(token, TokenType::ILLEGAL, mChar);
             }
         }
 
@@ -95,9 +127,19 @@ namespace interpreter
         mChar = *mPosition;
     }
 
+    const char Lexer::PeekCharacter()
+    {
+        if (mReadPosition == mInput.end())
+        {
+            return 0;
+        }
+
+        return *mReadPosition;
+    }
+
     void Lexer::SkipWhiteSpace()
     {
-        while (mChar == ' ' || mChar == '\t' || mChar == '\r')
+        while (mChar == ' ' || mChar == '\t' || mChar == '\r' || mChar == '\n')
         {
             AdvanceCharacter();
         }
@@ -110,7 +152,7 @@ namespace interpreter
         }
 
         std::string_view result{ mPosition, mReadPosition };
-        mChar = *mReadPosition;
+        AdvanceCharacter();
         return result;
     }
 
@@ -121,7 +163,7 @@ namespace interpreter
         }
 
         std::string_view result{ mPosition, mReadPosition };
-        mChar = *mReadPosition;
+        AdvanceCharacter();
         return result;
     }
 }

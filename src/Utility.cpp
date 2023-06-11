@@ -10,7 +10,7 @@ namespace interpreter
             for (int i = 0; i < std::min(expected.size(), result.size()); i++)
             {
                 const auto [expectedType, expectedLiteral] {expected[i]};
-                const auto [resultType, resultLiteral] {expected[i]};
+                const auto [resultType, resultLiteral] {result[i]};
                 std::cout << i << ": Expected Type: " << ConvertTokenTypeToString(expectedType) << " Value: " << expectedLiteral << '\n';
                 std::cout << i << ": Result Type: " << ConvertTokenTypeToString(resultType) << " Value: " << resultLiteral << '\n';
                 std::cout << std::endl;
@@ -38,7 +38,7 @@ namespace interpreter
                 return tokenIter->second;
             }
 
-            assert(true);
+            assert(false);
             return "NO TOKEN TYPE IN MAP";
         }
 
@@ -53,6 +53,12 @@ namespace interpreter
         }
 
         void AssignToToken(Token& token, TokenType tokenType, std::string_view literal)
+        {
+            token.mType = tokenType;
+            token.mLiteral = literal;
+        }
+
+        void AssignToToken(Token& token, TokenType tokenType, const char literal)
         {
             token.mType = tokenType;
             token.mLiteral = literal;

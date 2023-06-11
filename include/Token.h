@@ -8,7 +8,7 @@ namespace interpreter
     enum class TokenType
     {
         ILLEGAL,
-        ENDF,
+        ENDF,   // EOF
 
         // Identifiers + literals
         IDENT,
@@ -82,6 +82,7 @@ namespace interpreter
         {TokenType::EQ, "EQ"},
         {TokenType::NOT_EQ, "NOT_EQ"},
         {TokenType::COMMA, "COMMA"},
+        {TokenType::SEMICOLON, "SEMICOLON"},
         {TokenType::LPAREN, "LPAREN"},
         {TokenType::RPAREN, "RPAREN"},
         {TokenType::LBRACE, "LBRACE"},

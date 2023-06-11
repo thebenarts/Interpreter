@@ -18,6 +18,7 @@ namespace interpreter
 
     private:
         void AdvanceCharacter();
+        const char PeekCharacter();
         void SkipWhiteSpace();
         std::string_view ReadIdentifier();
         std::string_view ReadNumber();
