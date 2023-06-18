@@ -17,6 +17,7 @@ namespace interpreter
         Lexer(std::string_view);
 
         const std::vector<Token>& GetTokens();
+        std::vector<Token> GetTokenCopies() { return mTokens; };
 
     private:
         Token AdvanceToken();

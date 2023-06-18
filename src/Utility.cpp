@@ -5,32 +5,6 @@ namespace interpreter
 {
     namespace utility
     {
-        bool CompareTokens(const std::span<Token> expected, const std::span<Token> result)
-        {
-            for (int i = 0; i < std::min(expected.size(), result.size()); i++)
-            {
-                const auto [expectedType, expectedLiteral] {expected[i]};
-                const auto [resultType, resultLiteral] {result[i]};
-                std::cout << i << ": Expected Type: " << ConvertTokenTypeToString(expectedType) << " Value: " << expectedLiteral << '\n';
-                std::cout << i << ": Result Type: " << ConvertTokenTypeToString(resultType) << " Value: " << resultLiteral << '\n';
-                std::cout << std::endl;
-
-                if (expectedType != resultType)
-                {
-                    std::cout << '\n' << "ERROR: EXPECTED TYPE: " << ConvertTokenTypeToString(expectedType) << " GOT: " << ConvertTokenTypeToString(resultType) << std::endl;
-                    return false;
-                }
-
-                if (expectedLiteral != resultLiteral)
-                {
-                    std::cout << '\n' << "ERROR: EXPECTED: " << expectedLiteral << " GOT: " << resultLiteral << std::endl;
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         bool TestLetStatement(ast::Statement* statement, std::string_view identifier)
         {
             bool success{ true };
@@ -53,17 +27,6 @@ namespace interpreter
             }
 
             return success;
-        }
-
-        std::string ConvertTokenTypeToString(TokenType tokenType)
-        {
-            if (const auto tokenIter{ sTokenTypeToStringMap.find(tokenType) }; tokenIter != sTokenTypeToStringMap.end())
-            {
-                return tokenIter->second;
-            }
-
-            assert(false);
-            return "NO TOKEN TYPE IN MAP";
         }
 
         bool IsLetter(char character)

@@ -40,8 +40,8 @@ namespace interpreter
         // Keywords
         FUNCTION,
         LET,
-        TRUE,
-        FALSE,
+        True,
+        False,
         IF,
         ELSE,
         RETURN,
@@ -58,8 +58,8 @@ namespace interpreter
     {
         {"fn",TokenType::FUNCTION},
         {"let", TokenType::LET},
-        {"true", TokenType::TRUE},
-        {"false", TokenType::FALSE},
+        {"true", TokenType::True},
+        {"false", TokenType::False},
         {"if", TokenType::IF},
         {"else",TokenType::ELSE},
         {"return", TokenType::RETURN}
@@ -89,8 +89,8 @@ namespace interpreter
         {TokenType::RBRACE, "RBRACE"},
         {TokenType::FUNCTION, "FUNCTION"},
         {TokenType::LET, "LET"},
-        {TokenType::TRUE, "TRUE"},
-        {TokenType::FALSE, "FALSE"},
+        {TokenType::True, "TRUE"},
+        {TokenType::False, "FALSE"},
         {TokenType::IF, "IF"},
         {TokenType::ELSE, "ELSE"},
         {TokenType::RETURN, "RETURN"}
