@@ -31,6 +31,30 @@ namespace interpreter
             return true;
         }
 
+        bool TestLetStatement(ast::Statement* statement, std::string_view identifier)
+        {
+            bool success{ true };
+            ast::LetStatement* letStatement{ dynamic_cast<ast::LetStatement*>(statement) };
+            VERIFY(letStatement)
+            {
+                if (!(letStatement->mToken.mType == TokenType::LET))
+                {
+                    std::cout << "ERROR: TYPE NOT == LET" << std::endl;
+                    success = false;
+                }
+
+                if (letStatement->mIdentifier.mLiteral != identifier)
+                {
+                    std::cout << "ERROR: IDENTIFIER DOESN'T MATCH. EXPECTED: " << letStatement->mIdentifier.mLiteral << " GOT: "
+                        << identifier << std::endl;
+
+                    success = false;
+                }
+            }
+
+            return success;
+        }
+
         std::string ConvertTokenTypeToString(TokenType tokenType)
         {
             if (const auto tokenIter{ sTokenTypeToStringMap.find(tokenType) }; tokenIter != sTokenTypeToStringMap.end())

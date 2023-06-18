@@ -1,5 +1,7 @@
 #pragma once
 #include "Token.h"
+#include "Lexer.h"
+#include "AbstractSyntaxTree.h"
 
 #include <string>
 #include <string_view>
@@ -9,11 +11,16 @@
 #include <fstream>
 #include <assert.h>
 
+# define VERIFY(expression) assert(expression); if(expression) 
+
 namespace interpreter
 {
     namespace utility
     {
+        // Test utilities
         bool CompareTokens(const std::span<Token> expected, const std::span<Token> result);
+        bool TestLetStatement(ast::Statement* letStatement, std::string_view identifier);
+
 
         bool IsLetter(char character);
         bool IsDigit(char character);

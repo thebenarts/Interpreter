@@ -15,9 +15,11 @@ namespace interpreter
         {
             mChar = *mPosition;
         }
+        
+        Tokenize();
     }
 
-    Token Lexer::NextToken()
+    Token Lexer::AdvanceToken()
     {
         Token token;
 
@@ -99,18 +101,21 @@ namespace interpreter
         return token;
     }
 
-    std::vector<Token> Lexer::Tokenize()
+    void Lexer::Tokenize()
     {
-        std::vector<Token> tokens;
-        Token token{ NextToken() };
+        Token token{ AdvanceToken() };
         while (token.mType != TokenType::ENDF)
         {
-            tokens.push_back(token);
-            token = NextToken();
+            mTokens.push_back(token);
+            token = AdvanceToken();
         }
 
-        tokens.push_back(token);    // add EOF token
-        return tokens;
+        mTokens.push_back(token);    // add EOF token
+    }
+
+    const std::vector<Token>& Lexer::GetTokens()
+    {
+        return mTokens;
     }
 
     void Lexer::AdvanceCharacter()
