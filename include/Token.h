@@ -1,7 +1,9 @@
 #pragma once
+
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "ForwardDeclares.h"
 
 namespace interpreter
 {
@@ -52,6 +54,8 @@ namespace interpreter
     {
         TokenType mType;
         std::string mLiteral;
+        int32_t mLineNumber;
+        CharacterRange mCharacterRange[2];
     };
 
     static std::unordered_map<std::string, TokenType> sKeywordsMap
@@ -95,5 +99,5 @@ namespace interpreter
         {TokenType::ELSE, "ELSE"},
         {TokenType::RETURN, "RETURN"}
     };
-          
+
 }

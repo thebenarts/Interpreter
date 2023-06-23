@@ -30,6 +30,13 @@ namespace interpreter {
             virtual ~LetStatement() {};
         };
 
+        struct ReturnStatement : public Statement 
+        {
+            std::unique_ptr<Expression> mValue;
+
+            virtual ~ReturnStatement() {};
+        };
+
         struct Program
         {
             std::vector<std::unique_ptr<Statement>> mStatements;

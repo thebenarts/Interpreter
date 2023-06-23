@@ -2,7 +2,7 @@
 
 namespace interpreter
 {
-    Parser::Parser(std::unique_ptr<Lexer> lexer) : mLexer(std::move(lexer))
+    Parser::Parser(LexerUniquePtr lexer) : mLexer(std::move(lexer))
     {
         VERIFY(!mLexer->mTokens.empty())
         {
@@ -80,6 +80,9 @@ namespace interpreter
             case TokenType::LET :
                 return ParseLetStatement();
                 break;
+            case TokenType::RETURN:
+                return ParseReturnStatement();
+                break;
             default:
                 return nullptr;
                 break;
@@ -94,7 +97,7 @@ namespace interpreter
         // We only land here after checking the CurrentToken in ParseStatement so it is safe to dereference without checking here 
         statement->mToken = *GetCurrentToken();
 
-        if (!PeekTokenIs(TokenType::IDENT))
+        if (!ExpectPeekTokenIs(TokenType::IDENT))
         {
             return nullptr;
         }
@@ -103,12 +106,29 @@ namespace interpreter
         statement->mIdentifier = *GetNextToken();
         AdvanceToken();
 
-        if (!PeekTokenIs(TokenType::ASSIGN))
+        if (!ExpectPeekTokenIs(TokenType::ASSIGN))
         {
             return nullptr;
         }
 
         // TODO: Add logic. for now we skip until we find a semicolon
+        while (GetCurrentToken() && !CurrentTokenIs(TokenType::SEMICOLON))
+        {
+            AdvanceToken();
+        }
+
+        return statement;
+    }
+
+    ReturnStatementUniquePtr Parser::ParseReturnStatement()
+    {
+        auto statement{ std::make_unique<ast::ReturnStatement>() };
+        // We only land here after checking the CurrentToken in ParseStatement so it is safe to dereference without checking here 
+        statement->mToken = *GetCurrentToken();
+
+        // TODO: implement logic here to handle expressions
+        AdvanceToken();
+
         while (GetCurrentToken() && !CurrentTokenIs(TokenType::SEMICOLON))
         {
             AdvanceToken();
@@ -140,5 +160,23 @@ namespace interpreter
     bool Parser::TokenIs(const Token& token, TokenType tokenType)
     {
         return token.mType == tokenType;
+        
+    }
+
+    bool Parser::ExpectPeekTokenIs(TokenType expectedType)
+    {
+        if (const Token* peekToken{ GetNextToken() })
+        {
+            if (TokenIs(*peekToken, expectedType))
+            {
+                return true;
+            }
+
+            std::cout << "ERROR: on line "<< peekToken->mLineNumber << " character range ("<<peekToken->mCharacterRange[0]<<" , " << peekToken->mCharacterRange[1]<< "); "
+                << " expected next token to be " << utility::ConvertTokenTypeToString(expectedType) <<
+                " actual type: " << utility::ConvertTokenTypeToString(peekToken->mType) << '\n';
+        }
+
+        return false;
     }
 }

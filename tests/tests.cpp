@@ -4,6 +4,11 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
+
+namespace interpreter
+{
+    TEST_CASE("LEXER TEST")
+    {
 // TestData 
 //`let five = 5;
 //let ten = 10;
@@ -11,12 +16,7 @@
 //x + y;
 //};
 //let result = add(five, ten);
-
-namespace interpreter
-{
-    TEST_CASE("LEXER TEST")
-    {
-        std::string lexerInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/testData.txt") };
+        std::string lexerInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/lexerTestData.txt") };
         interpreter::LexerUniquePtr lexer{ std::make_unique<interpreter::Lexer>(lexerInput) };
         std::vector<interpreter::Token> expected
         {

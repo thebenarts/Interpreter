@@ -5,30 +5,6 @@ namespace interpreter
 {
     namespace utility
     {
-        bool TestLetStatement(ast::Statement* statement, std::string_view identifier)
-        {
-            bool success{ true };
-            ast::LetStatement* letStatement{ dynamic_cast<ast::LetStatement*>(statement) };
-            VERIFY(letStatement)
-            {
-                if (!(letStatement->mToken.mType == TokenType::LET))
-                {
-                    std::cout << "ERROR: TYPE NOT == LET" << std::endl;
-                    success = false;
-                }
-
-                if (letStatement->mIdentifier.mLiteral != identifier)
-                {
-                    std::cout << "ERROR: IDENTIFIER DOESN'T MATCH. EXPECTED: " << letStatement->mIdentifier.mLiteral << " GOT: "
-                        << identifier << std::endl;
-
-                    success = false;
-                }
-            }
-
-            return success;
-        }
-
         bool IsLetter(char character)
         {
             return ('a' <= character && character <= 'z') || ('A' <= character && character <= 'Z') || character == '_';
@@ -39,16 +15,29 @@ namespace interpreter
             return ('0' <= character && character <= '9');
         }
 
-        void AssignToToken(Token& token, TokenType tokenType, std::string_view literal)
+        std::string ConvertTokenTypeToString(TokenType tokenType)
         {
-            token.mType = tokenType;
-            token.mLiteral = literal;
+            if (const auto tokenIter{ sTokenTypeToStringMap.find(tokenType) }; tokenIter != sTokenTypeToStringMap.end())
+            {
+                return tokenIter->second;
+            }
+
+            assert(false);
+            return "NO TOKEN TYPE IN MAP";
         }
 
-        void AssignToToken(Token& token, TokenType tokenType, const char literal)
+        void AssignToToken(Token& token, TokenType tokenType, std::string_view literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
             token.mLiteral = literal;
+            memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
+        }
+
+        void AssignToToken(Token& token, TokenType tokenType, const char literal, CharacterRange* characterRange)
+        {
+            token.mType = tokenType;
+            token.mLiteral = literal;
+            memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 
         TokenType DeriveIdentifierToken(std::string_view literal)
