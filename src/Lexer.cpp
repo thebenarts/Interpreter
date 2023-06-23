@@ -4,94 +4,104 @@
 
 namespace interpreter
 {
-    Lexer::Lexer(std::string_view input) : 
+    Lexer::Lexer(std::string_view input) :
         mInput(input),
         mPosition(mInput.begin()),
-        mReadPosition(mPosition + 1)
+        mReadPosition(mPosition + 1),
+        mLineNumber(0),
+        mCharacterNumber(0)
     {
         assert(!input.empty());
 
+        memset(mCharacterRange, 0, 2 * sizeof(CharacterRange));
         if (mPosition != mInput.end())
         {
             mChar = *mPosition;
         }
+        
+        Tokenize();
     }
 
-    Token Lexer::NextToken()
+    Token Lexer::AdvanceToken()
     {
         Token token;
 
         SkipWhiteSpace();
 
+        token.mLineNumber = mLineNumber;
         switch (mChar)
         {
-        case 0: utility::AssignToToken(token, TokenType::ENDF, "\0");
+        case 0: utility::AssignToToken(token, TokenType::ENDF, "\0", SetCharacterRange());
             return token;
             break;
         case '=': 
             if (PeekCharacter() == '=')
             {
                 const std::string literal{ mChar,PeekCharacter()};
-                utility::AssignToToken(token, TokenType::EQ, literal);
+                utility::AssignToToken(token, TokenType::EQ, literal, SetCharacterRange(1));
                 AdvanceCharacter();
             }
             else
             {
-                utility::AssignToToken(token, TokenType::ASSIGN, mChar);
+                utility::AssignToToken(token, TokenType::ASSIGN, mChar, SetCharacterRange());
             }
             break;
-        case '+': utility::AssignToToken(token, TokenType::PLUS, mChar);
+        case '+': utility::AssignToToken(token, TokenType::PLUS, mChar, SetCharacterRange());
             break;
-        case '-': utility::AssignToToken(token, TokenType::MINUS, mChar);
+        case '-': utility::AssignToToken(token, TokenType::MINUS, mChar, SetCharacterRange());
             break;
         case '!': 
             if (PeekCharacter() == '=')
             {
                 const std::string literal{ mChar,PeekCharacter()};
-                utility::AssignToToken(token, TokenType::NOT_EQ,literal);
+                utility::AssignToToken(token, TokenType::NOT_EQ,literal, SetCharacterRange(1));
                 AdvanceCharacter();
             }
             else
             {
-                utility::AssignToToken(token, TokenType::BANG, mChar);
+                utility::AssignToToken(token, TokenType::BANG, mChar, SetCharacterRange());
             }
             break;
-        case '/': utility::AssignToToken(token, TokenType::SLASH, mChar);
+        case '/': utility::AssignToToken(token, TokenType::SLASH, mChar, SetCharacterRange());
             break;
-        case '*': utility::AssignToToken(token, TokenType::ASTERISK, mChar);
+        case '*': utility::AssignToToken(token, TokenType::ASTERISK, mChar, SetCharacterRange());
             break;
-        case '<': utility::AssignToToken(token, TokenType::LT, mChar);
+        case '<': utility::AssignToToken(token, TokenType::LT, mChar, SetCharacterRange());
             break;
-        case '>': utility::AssignToToken(token, TokenType::GT, mChar);
+        case '>': utility::AssignToToken(token, TokenType::GT, mChar, SetCharacterRange());
             break;
-        case ';': utility::AssignToToken(token, TokenType::SEMICOLON, mChar);
+        case ';': utility::AssignToToken(token, TokenType::SEMICOLON, mChar, SetCharacterRange());
             break;
-        case '(': utility::AssignToToken(token, TokenType::LPAREN, mChar);
+        case '(': utility::AssignToToken(token, TokenType::LPAREN, mChar, SetCharacterRange());
             break;
-        case ')': utility::AssignToToken(token, TokenType::RPAREN, mChar);
+        case ')': utility::AssignToToken(token, TokenType::RPAREN, mChar, SetCharacterRange());
             break;
-        case ',': utility::AssignToToken(token, TokenType::COMMA, mChar);
+        case ',': utility::AssignToToken(token, TokenType::COMMA, mChar, SetCharacterRange());
             break;
-        case '{': utility::AssignToToken(token, TokenType::LBRACE, mChar);
+        case '{': utility::AssignToToken(token, TokenType::LBRACE, mChar, SetCharacterRange());
             break;
-        case '}': utility::AssignToToken(token, TokenType::RBRACE, mChar);
+        case '}': utility::AssignToToken(token, TokenType::RBRACE, mChar, SetCharacterRange());
             break;
         default:
             if (utility::IsLetter(mChar))
             {
-                std::string_view identifier{ ReadIdentifier() };
-                utility::AssignToToken(token, utility::DeriveIdentifierToken(identifier), identifier);
+                std::string_view identifier{ ReadIdentifier()};
+                // TODO: think of a way to unify range input.
+                // Due to how we built character ranges we have to directly pass the range in the case of traversed ranges
+                utility::AssignToToken(token, utility::DeriveIdentifierToken(identifier), identifier,mCharacterRange); 
                 return token;
             }
             else if (utility::IsDigit(mChar))
             {
                 std::string_view number{ ReadNumber() };
-                utility::AssignToToken(token, TokenType::INT, number);
+                // TODO: think of a way to unify range input.
+                // Due to how we built character ranges we have to directly pass the range in the case of traversed ranges
+                utility::AssignToToken(token, TokenType::INT, number, mCharacterRange);
                 return token;
             }
             else 
             {
-                utility::AssignToToken(token, TokenType::ILLEGAL, mChar);
+                utility::AssignToToken(token, TokenType::ILLEGAL, mChar, SetCharacterRange());
             }
         }
 
@@ -99,21 +109,31 @@ namespace interpreter
         return token;
     }
 
-    std::vector<Token> Lexer::Tokenize()
+    void Lexer::Tokenize()
     {
-        std::vector<Token> tokens;
-        Token token{ NextToken() };
+        Token token{ AdvanceToken() };
         while (token.mType != TokenType::ENDF)
         {
-            tokens.push_back(token);
-            token = NextToken();
+            mTokens.push_back(token);
+            token = AdvanceToken();
         }
 
-        tokens.push_back(token);    // add EOF token
-        return tokens;
+        mTokens.push_back(token);    // add EOF token
     }
 
-    void Lexer::AdvanceCharacter()
+    CharacterRange* Lexer::SetCharacterRange(CharacterRange range /* = 0*/)
+    {
+        mCharacterRange[0] = mCharacterNumber;
+        mCharacterRange[1] = mCharacterNumber + range;
+        return mCharacterRange;
+    }
+
+    const std::vector<Token>& Lexer::GetTokens()
+    {
+        return mTokens;
+    }
+
+    void Lexer::AdvanceCharacter(bool hadNewLine /* = false*/)
     {
         if (mReadPosition == mInput.end())
         {
@@ -123,6 +143,10 @@ namespace interpreter
 
         mPosition = mReadPosition;
         ++mReadPosition;
+        if (!hadNewLine)
+        {
+            ++mCharacterNumber;
+        }
 
         mChar = *mPosition;
     }
@@ -139,18 +163,30 @@ namespace interpreter
 
     void Lexer::SkipWhiteSpace()
     {
-        while (mChar == ' ' || mChar == '\t' || mChar == '\r' || mChar == '\n')
+        const auto expression = [this]()->bool {return mChar == ' ' || mChar == '\t' || mChar == '\r' || mChar == '\n'; };
+        bool newLine{ false };
+        while (expression())
         {
-            AdvanceCharacter();
+            // TODO: think about a way to optimize this double check away.
+            if (mChar == '\n')
+            {
+                ++mLineNumber;
+                mCharacterNumber = 0;
+                newLine = true;
+            }
+            AdvanceCharacter(newLine);
         }
     }
 
     std::string_view Lexer::ReadIdentifier()
     {
+        mCharacterRange[0] = mCharacterNumber;
         for (; mReadPosition != mInput.end() && utility::IsLetter(*mReadPosition); mReadPosition++)
         {
         }
 
+        mCharacterRange[1] = mCharacterRange[0] + (mReadPosition - mPosition) - 1;
+        mCharacterNumber = mCharacterRange[1];
         std::string_view result{ mPosition, mReadPosition };
         AdvanceCharacter();
         return result;
@@ -158,10 +194,13 @@ namespace interpreter
 
     std::string_view Lexer::ReadNumber()
     {
+        mCharacterRange[0] = mCharacterNumber;
         for (; mReadPosition != mInput.end() && utility::IsDigit(*mReadPosition); mReadPosition++)
         {
         }
 
+        mCharacterRange[1] = mCharacterRange[0] + (mReadPosition - mPosition) - 1;
+        mCharacterNumber = mCharacterRange[1];
         std::string_view result{ mPosition, mReadPosition };
         AdvanceCharacter();
         return result;

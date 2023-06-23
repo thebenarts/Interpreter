@@ -1,7 +1,9 @@
 #pragma once
+
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "ForwardDeclares.h"
 
 namespace interpreter
 {
@@ -40,8 +42,8 @@ namespace interpreter
         // Keywords
         FUNCTION,
         LET,
-        TRUE,
-        FALSE,
+        True,
+        False,
         IF,
         ELSE,
         RETURN,
@@ -52,14 +54,16 @@ namespace interpreter
     {
         TokenType mType;
         std::string mLiteral;
+        int32_t mLineNumber;
+        CharacterRange mCharacterRange[2];
     };
 
     static std::unordered_map<std::string, TokenType> sKeywordsMap
     {
         {"fn",TokenType::FUNCTION},
         {"let", TokenType::LET},
-        {"true", TokenType::TRUE},
-        {"false", TokenType::FALSE},
+        {"true", TokenType::True},
+        {"false", TokenType::False},
         {"if", TokenType::IF},
         {"else",TokenType::ELSE},
         {"return", TokenType::RETURN}
@@ -89,11 +93,11 @@ namespace interpreter
         {TokenType::RBRACE, "RBRACE"},
         {TokenType::FUNCTION, "FUNCTION"},
         {TokenType::LET, "LET"},
-        {TokenType::TRUE, "TRUE"},
-        {TokenType::FALSE, "FALSE"},
+        {TokenType::True, "TRUE"},
+        {TokenType::False, "FALSE"},
         {TokenType::IF, "IF"},
         {TokenType::ELSE, "ELSE"},
         {TokenType::RETURN, "RETURN"}
     };
-          
+
 }

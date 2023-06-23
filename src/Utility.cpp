@@ -5,30 +5,14 @@ namespace interpreter
 {
     namespace utility
     {
-        bool CompareTokens(const std::span<Token> expected, const std::span<Token> result)
+        bool IsLetter(char character)
         {
-            for (int i = 0; i < std::min(expected.size(), result.size()); i++)
-            {
-                const auto [expectedType, expectedLiteral] {expected[i]};
-                const auto [resultType, resultLiteral] {result[i]};
-                std::cout << i << ": Expected Type: " << ConvertTokenTypeToString(expectedType) << " Value: " << expectedLiteral << '\n';
-                std::cout << i << ": Result Type: " << ConvertTokenTypeToString(resultType) << " Value: " << resultLiteral << '\n';
-                std::cout << std::endl;
+            return ('a' <= character && character <= 'z') || ('A' <= character && character <= 'Z') || character == '_';
+        }
 
-                if (expectedType != resultType)
-                {
-                    std::cout << '\n' << "ERROR: EXPECTED TYPE: " << ConvertTokenTypeToString(expectedType) << " GOT: " << ConvertTokenTypeToString(resultType) << std::endl;
-                    return false;
-                }
-
-                if (expectedLiteral != resultLiteral)
-                {
-                    std::cout << '\n' << "ERROR: EXPECTED: " << expectedLiteral << " GOT: " << resultLiteral << std::endl;
-                    return false;
-                }
-            }
-
-            return true;
+        bool IsDigit(char character)
+        {
+            return ('0' <= character && character <= '9');
         }
 
         std::string ConvertTokenTypeToString(TokenType tokenType)
@@ -42,26 +26,18 @@ namespace interpreter
             return "NO TOKEN TYPE IN MAP";
         }
 
-        bool IsLetter(char character)
-        {
-            return ('a' <= character && character <= 'z') || ('A' <= character && character <= 'Z') || character == '_';
-        }
-
-        bool IsDigit(char character)
-        {
-            return ('0' <= character && character <= '9');
-        }
-
-        void AssignToToken(Token& token, TokenType tokenType, std::string_view literal)
+        void AssignToToken(Token& token, TokenType tokenType, std::string_view literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
             token.mLiteral = literal;
+            memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 
-        void AssignToToken(Token& token, TokenType tokenType, const char literal)
+        void AssignToToken(Token& token, TokenType tokenType, const char literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
             token.mLiteral = literal;
+            memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 
         TokenType DeriveIdentifierToken(std::string_view literal)
