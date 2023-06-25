@@ -96,7 +96,7 @@ namespace interpreter
                 std::string_view number{ ReadNumber() };
                 // TODO: think of a way to unify range input.
                 // Due to how we built character ranges we have to directly pass the range in the case of traversed ranges
-                utility::AssignToToken(token, TokenType::INT, number, mCharacterRange);
+                utility::AssignToToken(token, TokenType::INT, utility::ToNumber(number), mCharacterRange);
                 return token;
             }
             else 

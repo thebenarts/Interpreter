@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 #include "ForwardDeclares.h"
 
 namespace interpreter
@@ -42,8 +43,8 @@ namespace interpreter
         // Keywords
         FUNCTION,
         LET,
-        True,
-        False,
+        TRUE,
+        FALSE,
         IF,
         ELSE,
         RETURN,
@@ -53,7 +54,7 @@ namespace interpreter
     struct Token
     {
         TokenType mType;
-        std::string mLiteral;
+        std::variant<std::string,int64_t> mLiteral;
         int32_t mLineNumber;
         CharacterRange mCharacterRange[2];
     };
@@ -62,8 +63,8 @@ namespace interpreter
     {
         {"fn",TokenType::FUNCTION},
         {"let", TokenType::LET},
-        {"true", TokenType::True},
-        {"false", TokenType::False},
+        {"true", TokenType::TRUE},
+        {"false", TokenType::FALSE},
         {"if", TokenType::IF},
         {"else",TokenType::ELSE},
         {"return", TokenType::RETURN}
@@ -93,8 +94,8 @@ namespace interpreter
         {TokenType::RBRACE, "RBRACE"},
         {TokenType::FUNCTION, "FUNCTION"},
         {TokenType::LET, "LET"},
-        {TokenType::True, "TRUE"},
-        {TokenType::False, "FALSE"},
+        {TokenType::TRUE, "TRUE"},
+        {TokenType::FALSE, "FALSE"},
         {TokenType::IF, "IF"},
         {TokenType::ELSE, "ELSE"},
         {TokenType::RETURN, "RETURN"}

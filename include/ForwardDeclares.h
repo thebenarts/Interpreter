@@ -13,6 +13,8 @@ namespace interpreter
         class Statement;
         class LetStatement;
         class ReturnStatement;
+        class ExpressionStatement;
+        class Expression;
         class Program;
     }
 
@@ -22,6 +24,8 @@ namespace interpreter
     typedef std::unique_ptr<ast::Statement> StatementUniquePtr;
     typedef std::unique_ptr<ast::LetStatement> LetStatementUniquePtr;
     typedef std::unique_ptr<ast::ReturnStatement> ReturnStatementUniquePtr;
+    typedef std::unique_ptr<ast::ExpressionStatement> ExpressionStatementUniquePtr;
+    typedef std::unique_ptr<ast::Expression> ExpressionUniquePtr;
     typedef std::unique_ptr<ast::Program> ProgramUniquePtr;
 
     typedef std::unique_ptr<Lexer> LexerUniquePtr;

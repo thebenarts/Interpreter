@@ -15,6 +15,74 @@ namespace interpreter
             return ('0' <= character && character <= '9');
         }
 
+        // TODO: This assumes the string isn't holding a number larger than 2^63-1 or smaller than -2^63
+        int64_t ToNumber(std::string_view literal)
+        {
+            int64_t number{};
+            for (const char digit : literal)
+            {
+                VERIFY(IsDigit(digit))
+                {
+                    number *= 10;
+                    number += 0x0F & digit;
+                }
+            }
+
+            return number;
+        }
+
+        bool CompareTokens(const Token& left, const Token& right)
+        {
+            VERIFY(left.mType == right.mType) {}
+            else
+            {
+                std::cout << "ERROR: Token Type mismatch: " << ConvertTokenTypeToString(left.mType) << " : "
+                    << ConvertTokenTypeToString(right.mType) << std::endl;
+
+                return false;
+            }
+
+            bool leftIsString{ std::holds_alternative<std::string>(left.mLiteral) };
+            bool rightIsString{ std::holds_alternative<std::string>(right.mLiteral) };
+
+            VERIFY(leftIsString == rightIsString){}
+            else
+            {
+                std::cout << "ERROR: Token Literals hold different types of values." << std::endl;
+
+                return false;
+            }
+
+            if (leftIsString)
+            {
+                const auto leftValue{ std::get<std::string>(left.mLiteral) };
+                const auto rightValue{ std::get<std::string>(right.mLiteral) };
+                VERIFY(leftValue == rightValue) {}
+                else
+                {
+                    std::cout << "ERROR: Token values are not the same: " << leftValue <<
+                    " : " << rightValue << std::endl;
+
+                    return false;
+                }
+            }
+            else
+            {
+                const auto leftValue{ std::get<int64_t>(left.mLiteral) };
+                const auto rightValue{ std::get<int64_t>(right.mLiteral) };
+                VERIFY(leftValue == rightValue) {}
+                else
+                {
+                    std::cout << "ERROR: Token values are not the same: " << leftValue <<
+                        " : " << rightValue << std::endl;
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         std::string ConvertTokenTypeToString(TokenType tokenType)
         {
             if (const auto tokenIter{ sTokenTypeToStringMap.find(tokenType) }; tokenIter != sTokenTypeToStringMap.end())
@@ -29,14 +97,22 @@ namespace interpreter
         void AssignToToken(Token& token, TokenType tokenType, std::string_view literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
-            token.mLiteral = literal;
+            token.mLiteral.emplace<std::string>(literal);
             memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 
         void AssignToToken(Token& token, TokenType tokenType, const char literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
-            token.mLiteral = literal;
+            std::string str{ literal };
+            token.mLiteral.emplace<std::string>(str);
+            memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
+        }
+
+        void AssignToToken(Token& token, TokenType tokenType, int64_t literal, CharacterRange* characterRange)
+        {
+            token.mType = tokenType;
+            token.mLiteral.emplace<int64_t>(literal);
             memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 

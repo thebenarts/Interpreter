@@ -9,8 +9,25 @@ namespace interpreter
             mCurrent = mLexer->mTokens.begin();
             mNext = mCurrent + 1;
             mEnd = mLexer->mTokens.end();
+
+            RegisterParseFunctionPointers();
         }
     }
+
+    void Parser::RegisterParseFunctionPointers()
+    {
+        // Register Prefix Function pointers
+        const auto RegisterPrefixFunctionPtr = [this](TokenType tokenType, PrefixParseFunctionPtr functionPtr) {
+            mPrefixFunctionPtrMap.insert_or_assign(tokenType, functionPtr);
+        };
+
+        RegisterPrefixFunctionPtr(TokenType::IDENT, std::bind(&Parser::ParseIdentifierAndIntegerExpression,this));
+        RegisterPrefixFunctionPtr(TokenType::INT, std::bind(&Parser::ParseIdentifierAndIntegerExpression, this));
+        RegisterPrefixFunctionPtr(TokenType::BANG, std::bind(&Parser::ParsePrefixExpression, this));
+        RegisterPrefixFunctionPtr(TokenType::MINUS, std::bind(&Parser::ParsePrefixExpression, this));
+        // Register Infix Function pointers
+    }
+
     void Parser::AdvanceToken()
     {
         if (mNext == mEnd)
@@ -84,7 +101,7 @@ namespace interpreter
                 return ParseReturnStatement();
                 break;
             default:
-                return nullptr;
+                return ParseExpressionStatement();
                 break;
             }
         }
@@ -135,6 +152,67 @@ namespace interpreter
         }
 
         return statement;
+    }
+
+    ExpressionStatementUniquePtr Parser::ParseExpressionStatement()
+    {
+        auto statement{ std::make_unique<ast::ExpressionStatement>() };
+        statement->mToken = *GetCurrentToken();
+        // TODO: Figure out a way so we don't store the same data twice... Essentially mToken is useless here.
+        statement->mExpression = std::move(ParseExpression(ast::LOWEST));
+
+        if (PeekTokenIs(TokenType::SEMICOLON))
+        {
+            AdvanceToken();
+        }
+
+        return statement;
+    }
+
+    ExpressionUniquePtr Parser::ParseExpression(ast::Precedence precedence)
+    {
+        if (const Token * token{ GetCurrentToken() })
+        {
+            VERIFY(mPrefixFunctionPtrMap.contains(token->mType))
+            {
+                PrefixParseFunctionPtr prefixFunctionPtr{ mPrefixFunctionPtrMap.at(token->mType) };
+                return prefixFunctionPtr();
+            }
+        }
+
+        return nullptr;
+    }
+
+    ExpressionUniquePtr Parser::ParseIdentifierAndIntegerExpression()
+    {
+        auto expression{ std::make_unique<ast::Expression>() };
+        // Pointer check done in ParseExpression
+        expression->mToken = *GetCurrentToken();
+        switch (expression->mToken.mType)
+        {
+        case TokenType::IDENT:
+            expression->mExpressionType = ast::ExpressionType::IdentifierExpression;
+            break;
+        case TokenType::INT:
+            expression->mExpressionType = ast::ExpressionType::IntegerExpression;
+            break;
+        }
+        return expression;
+    }
+
+    ExpressionUniquePtr Parser::ParsePrefixExpression()
+    {
+        auto expression{ std::make_unique<ast::PrefixExpression>() };
+        expression->mExpressionType = ast::ExpressionType::PrefixExpression;
+        // Pointer check done in ParseExpression
+        expression->mToken = *GetCurrentToken();
+        if (const auto nextToken{ GetNextToken() })
+        {
+            AdvanceToken();
+            expression->mRightSideValue = ParseExpression(ast::PREFIX);
+        }
+
+        return expression;
     }
 
     bool Parser::PeekTokenIs(TokenType tokenType)
