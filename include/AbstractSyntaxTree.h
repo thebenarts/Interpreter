@@ -32,65 +32,104 @@ namespace interpreter {
         enum class ExpressionType
         {
             None,
+            PrimitiveExpression,
             IdentifierExpression,
             IntegerExpression,
+            BooleanExpression,
             PrefixExpression,
-            InfixExpression
+            InfixExpression,
         };
 
         struct Node
         {
-            Node():mNodeType(NodeType::Node){}
-
+            virtual std::optional<Token> TokenNode() = 0;
+            virtual std::string Log() = 0;
             NodeType mNodeType;
-            Token mToken;
             virtual ~Node() {};
         };
 
         struct Statement : public Node
         {
-            Statement() { mNodeType = NodeType::Statement; }
-            virtual std::string Log();
-            std::unique_ptr<Expression> mExpression;
+            virtual std::optional<Token> StatementNode() = 0;
             virtual ~Statement() {};
         };
 
         struct Expression : public Node
         {
-            Expression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::None; }
+            virtual std::optional<Token> ExpressionNode() = 0;
             ExpressionType mExpressionType;
-            std::string Log();
             virtual ~Expression() {};
-        };
-
-        struct PrefixExpression : public Expression 
-        {
-            PrefixExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::PrefixExpression; }
-            // mToken inherited through Expression->Node->mToken will hold the prefix
-            std::unique_ptr<Expression> mRightSideValue;
-            virtual ~PrefixExpression() {};
         };
 
         struct LetStatement : public Statement
         {
             LetStatement() { mNodeType = NodeType::LetStatement; }
-            virtual std::string Log() override;
-            Token mIdentifier;
-
             virtual ~LetStatement() {};
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> StatementNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;                       // let Token
+            ExpressionUniquePtr mIdentifier;
+            ExpressionUniquePtr mValue;         // Expression to assign 
         };
 
         struct ReturnStatement : public Statement 
         {
             ReturnStatement() { mNodeType = NodeType::ReturnStatement; }
-            virtual std::string Log() override;
             virtual ~ReturnStatement() {};
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> StatementNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;                       // return Token
+            ExpressionUniquePtr mValue;         // Return value expression
         };
 
         struct ExpressionStatement : public Statement
         {
             ExpressionStatement() { mNodeType = NodeType::ExpressionStatement; }
             virtual ~ExpressionStatement() {};
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> StatementNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;                       // The first token of the expression
+            ExpressionUniquePtr mValue;         // Rest of the expression
+        };
+
+        struct PrimitiveExpression : public Expression
+        {
+            PrimitiveExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::PrimitiveExpression; }
+            virtual ~PrimitiveExpression(){}
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> ExpressionNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;
+        };
+
+        struct PrefixExpression : public Expression 
+        {
+            PrefixExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::PrefixExpression; }
+            virtual ~PrefixExpression() {};
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> ExpressionNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;
+            Token mOperator;
+            ExpressionUniquePtr mRightSideValue;
         };
 
         struct Program

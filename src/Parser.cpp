@@ -21,8 +21,8 @@ namespace interpreter
             mPrefixFunctionPtrMap.insert_or_assign(tokenType, functionPtr);
         };
 
-        RegisterPrefixFunctionPtr(TokenType::IDENT, std::bind(&Parser::ParseIdentifierAndIntegerExpression,this));
-        RegisterPrefixFunctionPtr(TokenType::INT, std::bind(&Parser::ParseIdentifierAndIntegerExpression, this));
+        RegisterPrefixFunctionPtr(TokenType::IDENT, std::bind(&Parser::ParsePrimitiveExpression,this));
+        RegisterPrefixFunctionPtr(TokenType::INT, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::BANG, std::bind(&Parser::ParsePrefixExpression, this));
         RegisterPrefixFunctionPtr(TokenType::MINUS, std::bind(&Parser::ParsePrefixExpression, this));
         // Register Infix Function pointers
@@ -119,8 +119,12 @@ namespace interpreter
             return nullptr;
         }
 
-        // PeekTokenIs already checks for null so yet again this is safe to dereference
-        statement->mIdentifier = *GetNextToken();
+        VERIFY(GetNextToken())
+        {
+            auto identifierExpression{ std::make_unique<ast::PrimitiveExpression>() };
+            identifierExpression->mToken = *GetNextToken();
+            statement->mIdentifier = std::move(identifierExpression);
+        }
         AdvanceToken();
 
         if (!ExpectPeekTokenIs(TokenType::ASSIGN))
@@ -159,7 +163,7 @@ namespace interpreter
         auto statement{ std::make_unique<ast::ExpressionStatement>() };
         statement->mToken = *GetCurrentToken();
         // TODO: Figure out a way so we don't store the same data twice... Essentially mToken is useless here.
-        statement->mExpression = std::move(ParseExpression(ast::LOWEST));
+        statement->mValue = std::move(ParseExpression(ast::LOWEST));
 
         if (PeekTokenIs(TokenType::SEMICOLON))
         {
@@ -183,9 +187,9 @@ namespace interpreter
         return nullptr;
     }
 
-    ExpressionUniquePtr Parser::ParseIdentifierAndIntegerExpression()
+    ExpressionUniquePtr Parser::ParsePrimitiveExpression()
     {
-        auto expression{ std::make_unique<ast::Expression>() };
+        auto expression{ std::make_unique<ast::PrimitiveExpression>() };
         // Pointer check done in ParseExpression
         expression->mToken = *GetCurrentToken();
         switch (expression->mToken.mType)
@@ -195,6 +199,10 @@ namespace interpreter
             break;
         case TokenType::INT:
             expression->mExpressionType = ast::ExpressionType::IntegerExpression;
+            break;
+        case TokenType::TRUE:[[fall_through]]
+        case TokenType::FALSE:
+            expression->mExpressionType = ast::ExpressionType::BooleanExpression;
             break;
         }
         return expression;

@@ -6,19 +6,18 @@
 
 #undef TRUE
 #undef FALSE
-
 namespace interpreter
 {
     TEST_CASE("LEXER TEST")
     {
-// TestData 
-//`let five = 5;
-//let ten = 10;
-//let add = fn(x, y) {
-//x + y;
-//};
-//let result = add(five, ten);
-        std::string lexerInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/lexerTestData.txt") };
+        // TestData 
+        //`let five = 5;
+        //let ten = 10;
+        //let add = fn(x, y) {
+        //x + y;
+        //};
+        //let result = add(five, ten);
+        std::string lexerInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/lexerTestData.txt") };
         interpreter::LexerUniquePtr lexer{ std::make_unique<interpreter::Lexer>(lexerInput) };
         std::vector<interpreter::Token> expected
         {
@@ -78,13 +77,13 @@ namespace interpreter
             {TokenType::RPAREN, ")"},
             {TokenType::LBRACE, "{"},
             {TokenType::RETURN, "return"},
-		    {TokenType::TRUE, "true"},
+            {TokenType::TRUE, "true"},
             {TokenType::SEMICOLON, ";"},
             {TokenType::RBRACE, "}"},
             {TokenType::ELSE, "else"},
             {TokenType::LBRACE, "{"},
             {TokenType::RETURN, "return"},
-		    {TokenType::FALSE, "false"},
+            {TokenType::FALSE, "false"},
             {TokenType::SEMICOLON, ";"},
             {TokenType::RBRACE, "}"},
             {TokenType::INT, 10},
@@ -110,14 +109,14 @@ namespace interpreter
             }
             else
             {
-                REQUIRE(std::get<int64_t>(expected[i].mLiteral) == std::get<int64_t>(results[i].mLiteral));
+                REQUIRE(std::get<Number>(expected[i].mLiteral) == std::get<Number>(results[i].mLiteral));
             }
         }
     }
 
     TEST_CASE("PARSER Statement tests")
     {
-        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/parserTestData.txt") };
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/parserTestData.txt") };
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
@@ -129,13 +128,21 @@ namespace interpreter
 
         for (int i = 0; i != 3; i++)
         {
+            std::cout << program->mStatements[i]->Log() << '\n';
             ast::LetStatement* letStatement{ dynamic_cast<ast::LetStatement*>(program->mStatements[i].get()) };
             REQUIRE(letStatement != nullptr);
 
             REQUIRE(letStatement->mToken.mType == TokenType::LET);
-            if (std::holds_alternative<std::string>(letStatement->mIdentifier.mLiteral))
+            if (letStatement->mIdentifier)
             {
-                REQUIRE(*std::get_if<std::string>(&letStatement->mIdentifier.mLiteral) == expectedIdentifiers[i]);
+                if (const auto token{ letStatement->mIdentifier->TokenNode() })
+                {
+                    REQUIRE(std::holds_alternative<std::string>(token->mLiteral));
+                    if (std::holds_alternative<std::string>(token->mLiteral))
+                    {
+                        REQUIRE(std::get<std::string>(token->mLiteral) == expectedIdentifiers[i]);
+                    }
+                }
             }
         }
     }
@@ -150,9 +157,23 @@ namespace interpreter
         REQUIRE(program != nullptr);
         REQUIRE(program->mStatements.size() == 1);
         REQUIRE(program->mStatements[0]->mNodeType == ast::NodeType::ExpressionStatement);
-        REQUIRE(program->mStatements[0]->mExpression->mToken.mType == TokenType::IDENT);
-        REQUIRE(std::holds_alternative<std::string>(program->mStatements[0]->mExpression->mToken.mLiteral) == true);
-        REQUIRE(std::get<std::string>(program->mStatements[0]->mExpression->mToken.mLiteral) == "foobar");
+        std::cout << program->mStatements[0]->Log() << '\n';
+
+        ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get()) };
+        REQUIRE(expressionStatement);
+        REQUIRE(expressionStatement->mValue);
+
+        auto token{ program->mStatements[0]->TokenNode() };
+        REQUIRE(token);
+        REQUIRE(token->mType == TokenType::IDENT);
+        REQUIRE(std::holds_alternative<std::string>(token->mLiteral) == true);
+        REQUIRE(std::get<std::string>(token->mLiteral) == "foobar");
+
+        auto expressionToken{ expressionStatement->mValue->TokenNode() };
+        REQUIRE(expressionToken);
+        REQUIRE(expressionToken->mType == TokenType::IDENT);
+        REQUIRE(std::holds_alternative<std::string>(expressionToken->mLiteral) == true);
+        REQUIRE(std::get<std::string>(expressionToken->mLiteral) == "foobar");
     }
 
     TEST_CASE("IntegerExpressionTests")
@@ -165,9 +186,23 @@ namespace interpreter
         REQUIRE(program != nullptr);
         REQUIRE(program->mStatements.size() == 1);
         REQUIRE(program->mStatements[0]->mNodeType == ast::NodeType::ExpressionStatement);
-        REQUIRE(program->mStatements[0]->mExpression->mToken.mType == TokenType::INT);
-        REQUIRE(std::holds_alternative<int64_t>(program->mStatements[0]->mExpression->mToken.mLiteral) == true);
-        REQUIRE(std::get<int64_t>(program->mStatements[0]->mExpression->mToken.mLiteral) == 5);
+        std::cout << program->mStatements[0]->Log() << '\n';
+
+        ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get()) };
+        REQUIRE(expressionStatement);
+        REQUIRE(expressionStatement->mValue);
+
+        auto token{ program->mStatements[0]->TokenNode() };
+        REQUIRE(token);
+        REQUIRE(token->mType == TokenType::INT);
+        REQUIRE(std::holds_alternative<Number>(token->mLiteral) == true);
+        REQUIRE(std::get<Number>(token->mLiteral) == 5);
+
+        auto expressionToken{ expressionStatement->mValue->TokenNode() };
+        REQUIRE(expressionToken);
+        REQUIRE(expressionToken->mType == TokenType::INT);
+        REQUIRE(std::holds_alternative<Number>(expressionToken->mLiteral) == true);
+        REQUIRE(std::get<Number>(expressionToken->mLiteral) == 5);
     }
 
     TEST_CASE("PrefixOperatorExpressionTests")
@@ -187,14 +222,20 @@ namespace interpreter
         REQUIRE(program->mStatements.size() == 2);
         for (int i = 0; i != 2; i++)
         {
+            std::cout << program->mStatements[i]->Log() << '\n';
             REQUIRE(program->mStatements[i]->mNodeType == ast::NodeType::ExpressionStatement);
-            REQUIRE(program->mStatements[i]->mExpression->mExpressionType == ast::ExpressionType::PrefixExpression);
-            const auto prefixExpression{ dynamic_cast<ast::PrefixExpression*>(program->mStatements[i]->mExpression.get()) };
+
+            ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[i].get()) };
+            REQUIRE(expressionStatement);
+            REQUIRE(expressionStatement->mValue);
+
+            REQUIRE(expressionStatement->mValue->mExpressionType == ast::ExpressionType::PrefixExpression);
+            const auto prefixExpression{ dynamic_cast<ast::PrefixExpression*>(expressionStatement->mValue.get()) };
             REQUIRE(prefixExpression);
 
             REQUIRE(prefixExpression->mToken.mType == prefixTests[i][0].mType);
-            REQUIRE(prefixExpression->mRightSideValue->mToken.mType == prefixTests[i][1].mType);
-            REQUIRE(utility::CompareTokens(prefixExpression->mRightSideValue->mToken, prefixTests[i][1]));
+            REQUIRE(prefixExpression->mRightSideValue->TokenNode()->mType == prefixTests[i][1].mType);
+            REQUIRE(utility::CompareTokens(*prefixExpression->mRightSideValue->TokenNode(), prefixTests[i][1]));
         }
     }
 }

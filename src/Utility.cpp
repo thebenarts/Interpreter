@@ -45,7 +45,7 @@ namespace interpreter
             bool leftIsString{ std::holds_alternative<std::string>(left.mLiteral) };
             bool rightIsString{ std::holds_alternative<std::string>(right.mLiteral) };
 
-            VERIFY(leftIsString == rightIsString){}
+            VERIFY(leftIsString == rightIsString) {}
             else
             {
                 std::cout << "ERROR: Token Literals hold different types of values." << std::endl;
@@ -58,18 +58,18 @@ namespace interpreter
                 const auto leftValue{ std::get<std::string>(left.mLiteral) };
                 const auto rightValue{ std::get<std::string>(right.mLiteral) };
                 VERIFY(leftValue == rightValue) {}
-                else
-                {
-                    std::cout << "ERROR: Token values are not the same: " << leftValue <<
+            else
+            {
+                std::cout << "ERROR: Token values are not the same: " << leftValue <<
                     " : " << rightValue << std::endl;
 
-                    return false;
-                }
+                return false;
+            }
             }
             else
             {
-                const auto leftValue{ std::get<int64_t>(left.mLiteral) };
-                const auto rightValue{ std::get<int64_t>(right.mLiteral) };
+                const auto leftValue{ std::get<Number>(left.mLiteral) };
+                const auto rightValue{ std::get<Number>(right.mLiteral) };
                 VERIFY(leftValue == rightValue) {}
                 else
                 {
@@ -133,14 +133,18 @@ namespace interpreter
 
             // eat the file so we can determine the size
             std::ifstream input(fileName.data(), std::ios::in | std::ios::binary | std::ios::ate);
-            
-            std::ifstream::pos_type fileSize{ input.tellg() };
-            input.seekg(0, std::ios::beg);
+            VERIFY(input.good())
+            {
+                std::ifstream::pos_type fileSize{ input.tellg() };
+                input.seekg(0, std::ios::beg);
 
-            std::string bytes(static_cast<size_t>(fileSize),'\0');  // Need to use Parentheses to legally cast to size_t
-            input.read(&bytes[0], fileSize);    // Note: this limits us to ASCI.
+                std::string bytes(static_cast<size_t>(fileSize), '\0');  // Need to use Parentheses to legally cast to size_t
+                input.read(&bytes[0], fileSize);    // Note: this limits us to ASCI.
 
-            return bytes;   // NRVO should make this a move operation
+                return bytes;   // NRVO should make this a move operation
+            }
+
+            return {};
         }
     }
 }

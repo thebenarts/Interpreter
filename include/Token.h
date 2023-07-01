@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include "ForwardDeclares.h"
 
@@ -54,10 +55,11 @@ namespace interpreter
     struct Token
     {
         TokenType mType;
-        std::variant<std::string,int64_t> mLiteral;
+        std::variant<std::string, Number> mLiteral;
         int32_t mLineNumber;
         CharacterRange mCharacterRange[2];
     };
+    std::ostringstream& operator<<(std::ostringstream& out, const Token& token);
 
     static std::unordered_map<std::string, TokenType> sKeywordsMap
     {
@@ -99,6 +101,43 @@ namespace interpreter
         {TokenType::IF, "IF"},
         {TokenType::ELSE, "ELSE"},
         {TokenType::RETURN, "RETURN"}
+    };
+
+    static std::unordered_set<TokenType> sStringTokens
+    {
+        {TokenType::IDENT},
+        {TokenType::ASSIGN},
+        {TokenType::PLUS},
+        {TokenType::MINUS},
+        {TokenType::BANG},
+        {TokenType::ASTERISK},
+        {TokenType::SLASH},
+        {TokenType::LT},
+        {TokenType::GT},
+        {TokenType::EQ},
+        {TokenType::NOT_EQ},
+        {TokenType::COMMA},
+        {TokenType::SEMICOLON},
+        {TokenType::LPAREN},
+        {TokenType::RPAREN},
+        {TokenType::LBRACE},
+        {TokenType::RBRACE},
+        {TokenType::FUNCTION},
+        {TokenType::LET},
+        {TokenType::IF},
+        {TokenType::ELSE},
+        {TokenType::RETURN}
+    };
+
+    static std::unordered_set<TokenType> sNumberTokens
+    {
+        {TokenType::INT}
+    };
+
+    static std::unordered_set<TokenType> sBooleanTokens
+    {
+        {TokenType::TRUE},
+        {TokenType::FALSE}
     };
 
 }

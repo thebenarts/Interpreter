@@ -29,7 +29,7 @@ namespace interpreter
         ExpressionStatementUniquePtr ParseExpressionStatement();
         // Parse Expressions
         ExpressionUniquePtr ParseExpression(ast::Precedence precedence);
-        ExpressionUniquePtr ParseIdentifierAndIntegerExpression();
+        ExpressionUniquePtr ParsePrimitiveExpression();
         ExpressionUniquePtr ParsePrefixExpression();
 
         // Lexer utilities

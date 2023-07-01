@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 #include <span>
+#include <optional>
 
 #include <fstream>
 #include <assert.h>

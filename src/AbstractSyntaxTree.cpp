@@ -1,45 +1,115 @@
 #include "AbstractSyntaxTree.h"
+#include <sstream>
 
 namespace interpreter {
 
     namespace ast
     {
-        std::string Statement::Log()
-        {
-            return "";
-        }
+        // ------------------------------------------------------------ Let Statement -----------------------------------------------------
+        std::optional<Token> LetStatement::TokenNode() { return mToken; }
+        std::optional<Token> LetStatement::StatementNode() { return {}; }
 
         std::string LetStatement::Log()
         {
-            std::string result{ std::get<std::string>(mToken.mLiteral) };
-            result.push_back(' ');
-            result.append(std::get<std::string>(mIdentifier.mLiteral));
-            result.append(" = ");
+            std::ostringstream result;
 
-            if (mExpression)
+            if (auto tokenNode{ TokenNode() }; tokenNode)
             {
-                result.append(mExpression->Log());
+                result << *tokenNode << " ";
             }
 
-            return result;
+            if (mIdentifier)
+            {
+                if (auto identifierToken{ mIdentifier->TokenNode() })
+                {
+                    result << *identifierToken;
+                }
+            }
+
+            if (mValue)
+            {
+                result << mValue->Log();
+            }
+
+            result << ";";
+            return result.str();
         }
+
+        // ------------------------------------------------------------ Return Statement -----------------------------------------------------
+        std::optional<Token> ReturnStatement::TokenNode() { return mToken; }
+        std::optional<Token> ReturnStatement::StatementNode() { return {}; }
 
         std::string ReturnStatement::Log()
         {
-            std::string result{ std::get<std::string>(mToken.mLiteral) };
-            result.push_back(' ');
+            std::ostringstream result;
 
-            if (mExpression)
+            if (auto tokenNode{ TokenNode() }; tokenNode)
             {
-                result.append(mExpression->Log());
+                result << *tokenNode << " ";
             }
 
-            return result;
+            if (mValue)
+            {
+                result << mValue->Log();
+            }
+
+            result << ";";
+            return result.str();
         }
 
-        std::string Expression::Log()
+        // ------------------------------------------------------------ Expression Statement -----------------------------------------------------
+
+        std::optional<Token> ExpressionStatement::TokenNode() { return mToken; }
+        std::optional<Token> ExpressionStatement::StatementNode() { return {}; }
+
+        std::string ExpressionStatement::Log()
         {
-            return "";
+            std::ostringstream result;
+
+            if (mValue)
+            {
+                result << mValue->Log();
+            }
+            return result.str();
         }
-    }
-}
+
+        // ------------------------------------------------------------ Primitive Expression -----------------------------------------------------
+
+        std::optional<Token> PrimitiveExpression::TokenNode() { return mToken; }
+        std::optional<Token> PrimitiveExpression::ExpressionNode() { return {}; }
+
+        std::string PrimitiveExpression::Log()
+        {
+            std::ostringstream result;
+
+            if (auto tokenNode{ TokenNode() })
+            {
+                result << *tokenNode;
+            }
+
+            return result.str();
+        }
+        // ------------------------------------------------------------ Prefix Expression -----------------------------------------------------
+
+        std::optional<Token> PrefixExpression::TokenNode() { return mToken; }
+        std::optional<Token> PrefixExpression::ExpressionNode() { return {}; }
+
+        std::string PrefixExpression::Log()
+        {
+            std::ostringstream result;
+
+            result << "(";
+            result << mOperator;
+            if (mRightSideValue)
+            {
+                result << mRightSideValue->Log();
+            }
+            result << ")";
+
+            return result.str();
+        }
+
+
+    } // namespace ast
+
+}   // namespace interpreter
