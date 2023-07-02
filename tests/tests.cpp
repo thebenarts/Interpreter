@@ -238,4 +238,32 @@ namespace interpreter
             REQUIRE(utility::CompareTokens(*prefixExpression->mRightSideValue->TokenNode(), prefixTests[i][1]));
         }
     }
+
+    TEST_CASE("InfixOperatorExpressionTests")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/operatorPrecedenceTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        std::vector<std::string> operatorPrecedenceTests
+        {
+            "((-a) * b",
+            "(!(-a))",
+            "((a + b) + c)",
+            "((a + b) - c)",
+            "((a * b) * c)",
+            "((a * b) / c)",
+            "(a + (b / c))",
+            "(((a + (b * c)) + (d / e)) - f)",
+            "(3 + 4)((-5) * 5)",
+            "((5 > 4) == (3 < 4))",
+            "((5 < 4) != (3 > 4))",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+        };
+
+        REQUIRE(program != nullptr);
+        std::cout << program->Log();
+    }
 }

@@ -18,6 +18,18 @@ namespace interpreter {
             CALL = 1 << 5,              // myFunction(X)
         };
 
+        const std::unordered_map<TokenType, Precedence> sOperatorPrecedenceMap
+        {
+            {TokenType::EQ,EQUALS},
+            {TokenType::NOT_EQ, EQUALS},
+            {TokenType::LT, LESSGREATER},
+            {TokenType::GT, LESSGREATER},
+            {TokenType::PLUS, SUM},
+            {TokenType::MINUS, SUM},
+            {TokenType::SLASH, PRODUCT},
+            {TokenType::ASTERISK, PRODUCT}
+        };
+
         enum class NodeType : uint8_t
         {
             Node,
@@ -132,9 +144,25 @@ namespace interpreter {
             ExpressionUniquePtr mRightSideValue;
         };
 
+        struct InfixExpression : public Expression
+        {
+            InfixExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::InfixExpression; }
+            virtual ~InfixExpression() {};
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> ExpressionNode() override;
+            virtual std::string Log() override;
+
+            ExpressionUniquePtr mLeftExpression;
+            Token mToken;   // The operator token, e.g. +,- etc.
+            ExpressionUniquePtr mRightExpression;
+        };
+
         struct Program
         {
-            std::vector<std::unique_ptr<Statement>> mStatements;
+            std::vector<StatementUniquePtr> mStatements;
+
+            std::string Log();
         };
     }
 }

@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include <format>
 
 namespace interpreter
 {
@@ -16,16 +17,34 @@ namespace interpreter
 
     void Parser::RegisterParseFunctionPointers()
     {
-        // Register Prefix Function pointers
         const auto RegisterPrefixFunctionPtr = [this](TokenType tokenType, PrefixParseFunctionPtr functionPtr) {
             mPrefixFunctionPtrMap.insert_or_assign(tokenType, functionPtr);
         };
 
+        const auto RegisterInfixFunctionPtr = [this](TokenType tokenType, InfixParseFunctionPtr functionPtr) {
+            mInfixFunctionPtrMap.insert_or_assign(tokenType, functionPtr);
+        };
+
+        // Register Prefix Function pointers
         RegisterPrefixFunctionPtr(TokenType::IDENT, std::bind(&Parser::ParsePrimitiveExpression,this));
         RegisterPrefixFunctionPtr(TokenType::INT, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::BANG, std::bind(&Parser::ParsePrefixExpression, this));
         RegisterPrefixFunctionPtr(TokenType::MINUS, std::bind(&Parser::ParsePrefixExpression, this));
+
         // Register Infix Function pointers
+        {
+            using namespace std::placeholders;
+
+            RegisterInfixFunctionPtr(TokenType::PLUS, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::MINUS, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::SLASH, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::ASTERISK, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::EQ, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::NOT_EQ, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::LT, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::GT, std::bind(&Parser::ParseInfixExpression, this, _1));
+        }
+
     }
 
     void Parser::AdvanceToken()
@@ -165,7 +184,7 @@ namespace interpreter
         // TODO: Figure out a way so we don't store the same data twice... Essentially mToken is useless here.
         statement->mValue = std::move(ParseExpression(ast::LOWEST));
 
-        if (PeekTokenIs(TokenType::SEMICOLON))
+        if (NextTokenIs(TokenType::SEMICOLON))
         {
             AdvanceToken();
         }
@@ -177,11 +196,35 @@ namespace interpreter
     {
         if (const Token * token{ GetCurrentToken() })
         {
-            VERIFY(mPrefixFunctionPtrMap.contains(token->mType))
+            ExpressionUniquePtr expression;
+
+            IF_LOG(mPrefixFunctionPtrMap.contains(token->mType),
+                std::format("type: {} doesn't have a function associtated with it.", utility::ConvertTokenTypeToString(token->mType)))
             {
                 PrefixParseFunctionPtr prefixFunctionPtr{ mPrefixFunctionPtrMap.at(token->mType) };
-                return prefixFunctionPtr();
+                expression = prefixFunctionPtr();
             }
+
+            while (!NextTokenIs(TokenType::SEMICOLON) && precedence < GetNextPrecedence())
+            {
+                const auto nextToken{ GetNextToken() };
+                if (!nextToken)
+                {
+                    return expression;
+                }
+
+                const auto infixExpressionFunctionIterator { mInfixFunctionPtrMap.find(nextToken->mType) };
+                if (infixExpressionFunctionIterator == mInfixFunctionPtrMap.end())
+                {
+                    return expression;
+                }
+
+                AdvanceToken();
+
+                expression = infixExpressionFunctionIterator->second(std::move(expression));
+            }
+
+            return expression;
         }
 
         return nullptr;
@@ -214,16 +257,68 @@ namespace interpreter
         expression->mExpressionType = ast::ExpressionType::PrefixExpression;
         // Pointer check done in ParseExpression
         expression->mToken = *GetCurrentToken();
-        if (const auto nextToken{ GetNextToken() })
-        {
-            AdvanceToken();
-            expression->mRightSideValue = ParseExpression(ast::PREFIX);
-        }
+
+        AdvanceToken();
+        expression->mRightSideValue = ParseExpression(ast::PREFIX);
 
         return expression;
     }
 
-    bool Parser::PeekTokenIs(TokenType tokenType)
+    ExpressionUniquePtr Parser::ParseInfixExpression(ExpressionUniquePtr leftExpression)
+    {
+        auto expression{ std::make_unique<ast::InfixExpression>() };
+        expression->mExpressionType = ast::ExpressionType::InfixExpression;
+
+        VERIFY(leftExpression)
+        {
+            expression->mLeftExpression = std::move(leftExpression);
+        }
+
+        VERIFY(GetCurrentToken())
+        {
+            expression->mToken = *GetCurrentToken();
+        }
+
+        auto precedence{ GetCurrentPrecedence() };
+        AdvanceToken();
+        expression->mRightExpression = ParseExpression(precedence);
+
+        return expression;
+    }
+
+    ast::Precedence Parser::GetNextPrecedence()
+    {
+        auto token{ GetNextToken() };
+        VERIFY(token)
+        {
+            return GetPrecedence(*token);
+        }
+
+        return ast::Precedence::LOWEST;
+    }
+
+    ast::Precedence Parser::GetCurrentPrecedence()
+    {
+        auto token{ GetCurrentToken() };
+        VERIFY(token)
+        {
+            return GetPrecedence(*token);
+        }
+
+        return ast::Precedence::LOWEST;
+    }
+
+    ast::Precedence Parser::GetPrecedence(const Token& token)
+    {
+        if (const auto precedenceIterator{ ast::sOperatorPrecedenceMap.find(token.mType) }; precedenceIterator != ast::sOperatorPrecedenceMap.end())
+        {
+            return precedenceIterator->second;
+        }
+
+        return ast::Precedence::LOWEST;
+    }
+
+    bool Parser::NextTokenIs(TokenType tokenType)
     {
         if (const Token * peekToken{ GetNextToken() })
         {

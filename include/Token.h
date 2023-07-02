@@ -49,7 +49,6 @@ namespace interpreter
         IF,
         ELSE,
         RETURN,
-
     };
 
     struct Token
@@ -59,9 +58,9 @@ namespace interpreter
         int32_t mLineNumber;
         CharacterRange mCharacterRange[2];
     };
-    std::ostringstream& operator<<(std::ostringstream& out, const Token& token);
+    std::ostream& operator<<(std::ostream& out, const Token& token);
 
-    static std::unordered_map<std::string, TokenType> sKeywordsMap
+    const std::unordered_map<std::string, TokenType> sKeywordsMap
     {
         {"fn",TokenType::FUNCTION},
         {"let", TokenType::LET},
@@ -72,7 +71,7 @@ namespace interpreter
         {"return", TokenType::RETURN}
     };
 
-    static std::unordered_map<TokenType, std::string> sTokenTypeToStringMap
+    const std::unordered_map<TokenType, std::string> sTokenTypeToStringMap
     {
         {TokenType::ILLEGAL,"ILLEGAL"},
         {TokenType::ENDF, "EOF"},
@@ -103,7 +102,7 @@ namespace interpreter
         {TokenType::RETURN, "RETURN"}
     };
 
-    static std::unordered_set<TokenType> sStringTokens
+    const std::unordered_set<TokenType> sStringTokens
     {
         {TokenType::IDENT},
         {TokenType::ASSIGN},
@@ -129,12 +128,12 @@ namespace interpreter
         {TokenType::RETURN}
     };
 
-    static std::unordered_set<TokenType> sNumberTokens
+    const std::unordered_set<TokenType> sNumberTokens
     {
         {TokenType::INT}
     };
 
-    static std::unordered_set<TokenType> sBooleanTokens
+    const std::unordered_set<TokenType> sBooleanTokens
     {
         {TokenType::TRUE},
         {TokenType::FALSE}

@@ -15,6 +15,13 @@
 
 # define VERIFY(expression) assert(expression); if(expression) 
 
+# define VERIFY_MESSAGE(expression,message) if (!expression) std::cout << message << std::endl;  \
+    assert(expression); \
+    if(expression)
+
+# define IF_LOG(expression, message) if(!expression) std::cout << message << std::endl; \
+    if (expression)
+
 namespace interpreter
 {
     namespace utility

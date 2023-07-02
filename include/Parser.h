@@ -31,6 +31,13 @@ namespace interpreter
         ExpressionUniquePtr ParseExpression(ast::Precedence precedence);
         ExpressionUniquePtr ParsePrimitiveExpression();
         ExpressionUniquePtr ParsePrefixExpression();
+        ExpressionUniquePtr ParseInfixExpression(ExpressionUniquePtr leftExpression);
+
+
+        // Expression precedence helpers
+        ast::Precedence GetNextPrecedence();
+        ast::Precedence GetCurrentPrecedence();
+        ast::Precedence GetPrecedence(const Token& token);
 
         // Lexer utilities
         void AdvanceToken();
@@ -38,7 +45,7 @@ namespace interpreter
         const Token* GetCurrentToken();
         const Token* GetNextToken();
         std::tuple<const Token*, const Token*> GetTokens();
-        bool PeekTokenIs(TokenType tokenType);
+        bool NextTokenIs(TokenType tokenType);
         bool CurrentTokenIs(TokenType tokenType);
         bool TokenIs(const Token& token, TokenType tokenType);
         bool ExpectPeekTokenIs(TokenType tokenType);

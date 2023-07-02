@@ -6,6 +6,7 @@ namespace interpreter {
     namespace ast
     {
         // ------------------------------------------------------------ Let Statement -----------------------------------------------------
+
         std::optional<Token> LetStatement::TokenNode() { return mToken; }
         std::optional<Token> LetStatement::StatementNode() { return {}; }
 
@@ -36,6 +37,7 @@ namespace interpreter {
         }
 
         // ------------------------------------------------------------ Return Statement -----------------------------------------------------
+
         std::optional<Token> ReturnStatement::TokenNode() { return mToken; }
         std::optional<Token> ReturnStatement::StatementNode() { return {}; }
 
@@ -89,6 +91,7 @@ namespace interpreter {
 
             return result.str();
         }
+
         // ------------------------------------------------------------ Prefix Expression -----------------------------------------------------
 
         std::optional<Token> PrefixExpression::TokenNode() { return mToken; }
@@ -98,8 +101,9 @@ namespace interpreter {
         {
             std::ostringstream result;
 
-            result << "(";
-            result << mOperator;
+            const auto token{ TokenNode() };
+            VERIFY(token);
+            result << "(" << *token;
             if (mRightSideValue)
             {
                 result << mRightSideValue->Log();
@@ -109,6 +113,45 @@ namespace interpreter {
             return result.str();
         }
 
+        // ------------------------------------------------------------ Infix Expression -----------------------------------------------------
+
+        std::optional<Token> InfixExpression::TokenNode() { return mToken; }
+        std::optional<Token> InfixExpression::ExpressionNode() { return {}; }
+
+        std::string InfixExpression::Log()
+        {
+            std::ostringstream result;
+
+            result << "(";
+            VERIFY(mLeftExpression);
+            result << mLeftExpression->Log();
+            result << " " <<  mToken << " ";
+
+            if (mRightExpression)
+            {
+                result << mRightExpression->Log();
+            }
+
+            result << ")";
+            return result.str();
+        }
+
+        // ------------------------------------------------------------ Program -----------------------------------------------------
+
+        std::string Program::Log()
+        {
+            std::ostringstream result;
+
+            for (auto& statement : mStatements)
+            {
+                if (statement)
+                {
+                    result << statement->Log() << std::endl;
+                }
+            }
+
+            return result.str();
+        }
 
     } // namespace ast
 

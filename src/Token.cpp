@@ -3,7 +3,7 @@
 
 namespace interpreter
 {
-    std::ostringstream& operator<<(std::ostringstream& out, const Token& token)
+    std::ostream& operator<<(std::ostream& out, const Token& token)
     {
         [[likely]] if (sStringTokens.contains(token.mType))
         {
