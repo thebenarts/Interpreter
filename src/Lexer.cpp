@@ -88,7 +88,15 @@ namespace interpreter
                 std::string_view identifier{ ReadIdentifier()};
                 // TODO: think of a way to unify range input.
                 // Due to how we built character ranges we have to directly pass the range in the case of traversed ranges
-                utility::AssignToToken(token, utility::DeriveIdentifierToken(identifier), identifier,mCharacterRange); 
+                TokenType tokenType{ utility::DeriveIdentifierToken(identifier) };
+                if (sBooleanTokens.contains(tokenType))
+                {
+                    utility::AssignToToken(token, tokenType, bool{ tokenType == TokenType::TRUE }, mCharacterRange);
+                }
+                else
+                {
+                    utility::AssignToToken(token, tokenType, identifier, mCharacterRange);
+                }
                 return token;
             }
             else if (utility::IsDigit(mChar))

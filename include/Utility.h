@@ -35,7 +35,8 @@ namespace interpreter
 
         void AssignToToken(Token& token, TokenType tokenType, std::string_view literal, CharacterRange* characterRange);
         void AssignToToken(Token& token, TokenType tokenType, const char literal, CharacterRange* characterRange);
-        void AssignToToken(Token& token, TokenType tokenType, int64_t literal, CharacterRange* characterRange);
+        void AssignToToken(Token& token, TokenType tokenType, Number literal, CharacterRange* characterRange);
+        void AssignToToken(Token& token, TokenType tokenType, bool literal, CharacterRange* characterRange);
         TokenType DeriveIdentifierToken(std::string_view literal);
         std::string ReadTextFile(std::string_view fileName);
     }

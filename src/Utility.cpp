@@ -109,10 +109,17 @@ namespace interpreter
             memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 
-        void AssignToToken(Token& token, TokenType tokenType, int64_t literal, CharacterRange* characterRange)
+        void AssignToToken(Token& token, TokenType tokenType, Number literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
-            token.mLiteral.emplace<int64_t>(literal);
+            token.mLiteral.emplace<Number>(literal);
+            memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
+        }
+
+        void AssignToToken(Token& token, TokenType tokenType, bool literal, CharacterRange* characterRange)
+        {
+            token.mType = tokenType;
+            token.mLiteral.emplace<bool>(literal);
             memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 

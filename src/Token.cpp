@@ -15,7 +15,7 @@ namespace interpreter
         }
         else if (sBooleanTokens.contains(token.mType))
         {
-            Number boolean{ std::get<Number>(token.mLiteral) };
+            bool boolean{ std::get<bool>(token.mLiteral) };
             if (boolean)
             {
                 out << "true";

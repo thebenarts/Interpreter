@@ -26,6 +26,8 @@ namespace interpreter
         };
 
         // Register Prefix Function pointers
+        RegisterPrefixFunctionPtr(TokenType::TRUE, std::bind(&Parser::ParsePrimitiveExpression, this));
+        RegisterPrefixFunctionPtr(TokenType::FALSE, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::IDENT, std::bind(&Parser::ParsePrimitiveExpression,this));
         RegisterPrefixFunctionPtr(TokenType::INT, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::BANG, std::bind(&Parser::ParsePrefixExpression, this));
@@ -140,19 +142,22 @@ namespace interpreter
 
         VERIFY(GetNextToken())
         {
-            auto identifierExpression{ std::make_unique<ast::PrimitiveExpression>() };
-            identifierExpression->mToken = *GetNextToken();
-            statement->mIdentifier = std::move(identifierExpression);
+            AdvanceToken();
+            //auto identifierExpression{ std::make_unique<ast::PrimitiveExpression>() };
+            //identifierExpression->mToken = *GetCurrentToken();
+            statement->mIdentifier = std::move(ParsePrimitiveExpression());
         }
-        AdvanceToken();
 
         if (!ExpectPeekTokenIs(TokenType::ASSIGN))
         {
             return nullptr;
         }
+        AdvanceToken(); // Current Token is now on =
 
-        // TODO: Add logic. for now we skip until we find a semicolon
-        while (GetCurrentToken() && !CurrentTokenIs(TokenType::SEMICOLON))
+        AdvanceToken(); // Current Token is now on the first token of the expression
+        statement->mValue = ParseExpression(ast::Precedence::LOWEST);
+
+        if (NextTokenIs(TokenType::SEMICOLON))
         {
             AdvanceToken();
         }
@@ -274,6 +279,7 @@ namespace interpreter
             expression->mLeftExpression = std::move(leftExpression);
         }
 
+        // TODO: Once the parser is done confirm that this function only get's called from ParseExpression which means we can forego the check
         VERIFY(GetCurrentToken())
         {
             expression->mToken = *GetCurrentToken();

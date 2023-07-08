@@ -54,7 +54,7 @@ namespace interpreter
     struct Token
     {
         TokenType mType;
-        std::variant<std::string, Number> mLiteral;
+        std::variant<std::string, Number, bool> mLiteral;
         int32_t mLineNumber;
         CharacterRange mCharacterRange[2];
     };

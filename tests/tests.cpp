@@ -8,6 +8,92 @@
 #undef FALSE
 namespace interpreter
 {
+    namespace test
+    {
+        struct StringAndBool {
+            std::string identifier;
+            bool boolean;
+        };
+
+        struct InfixExpressionData
+        {
+            std::variant<std::string, Number, bool> left;
+            TokenType opType;
+            std::variant<std::string, Number, bool>right;
+        };
+
+        bool TestIdentifier(ast::Expression* expression, std::string_view expectedValue)
+        {
+            REQUIRE(expression->mExpressionType == ast::ExpressionType::IdentifierExpression);
+            const auto identifierToken{ expression->TokenNode() };
+            REQUIRE(identifierToken);
+            REQUIRE(std::holds_alternative<std::string>(identifierToken->mLiteral));
+            const auto identifier{ std::get<std::string>(identifierToken->mLiteral) };
+            REQUIRE(identifier == expectedValue);
+            return true;
+        }
+
+        bool TestInteger(ast::Expression* expression, Number expectedValue)
+        {
+            REQUIRE(expression->mExpressionType == ast::ExpressionType::IntegerExpression);
+            const auto integerToken{ expression->TokenNode() };
+            REQUIRE(integerToken);
+            REQUIRE(std::holds_alternative<Number>(integerToken->mLiteral));
+            const auto number{ std::get<Number>(integerToken->mLiteral) };
+            REQUIRE(number == expectedValue);
+            return true;
+        }
+
+        bool TestBoolean(ast::Expression* expression, bool expectedValue)
+        {
+            REQUIRE(expression->mExpressionType == ast::ExpressionType::BooleanExpression);
+            const auto boolToken{ expression->TokenNode() };
+            REQUIRE(boolToken);
+            const auto booleanValue{ std::get<bool>(boolToken->mLiteral) };
+            REQUIRE(booleanValue == expectedValue);
+            return true;
+        }
+
+        bool TestPrimitiveExpression(ast::Expression* expression, std::variant<std::string, Number, bool> expectedValue)
+        {
+            std::visit([&expression](auto&& arg) {
+                using ExpectedType = std::decay_t<decltype(arg)>;
+
+                if constexpr (std::is_same_v<std::string, ExpectedType>)
+                {
+                    return TestIdentifier(expression, arg);
+                }
+                else if constexpr (std::is_same_v<Number, ExpectedType>)
+                {
+                    return TestInteger(expression, arg);
+                }
+                else if constexpr (std::is_same_v<bool, ExpectedType>)
+                {
+                    return TestBoolean(expression, arg);
+                }
+                else
+                {
+                    REQUIRE(false);
+                    return false;
+                }
+                }, expectedValue);
+
+            return true;
+        }
+
+        template<typename T>
+        bool TestInfixExpression(ast::Expression* expression, T left, TokenType opType, T right)
+        {
+            REQUIRE(expression->mExpressionType == ast::ExpressionType::InfixExpression);
+            const auto infixExpression{ dynamic_cast<ast::InfixExpression*>(expression) };
+            REQUIRE(infixExpression);
+            TestPrimitiveExpression(infixExpression->mLeftExpression.get(), left);
+            REQUIRE(infixExpression->TokenNode()->mType == opType);
+            REQUIRE(infixExpression->mRightExpression.get());
+            TestPrimitiveExpression(infixExpression->mRightExpression.get(), right);
+            return true;
+        }
+    }
     TEST_CASE("LEXER TEST")
     {
         // TestData 
@@ -77,13 +163,13 @@ namespace interpreter
             {TokenType::RPAREN, ")"},
             {TokenType::LBRACE, "{"},
             {TokenType::RETURN, "return"},
-            {TokenType::TRUE, "true"},
+            {TokenType::TRUE, true},
             {TokenType::SEMICOLON, ";"},
             {TokenType::RBRACE, "}"},
             {TokenType::ELSE, "else"},
             {TokenType::LBRACE, "{"},
             {TokenType::RETURN, "return"},
-            {TokenType::FALSE, "false"},
+            {TokenType::FALSE, false},
             {TokenType::SEMICOLON, ";"},
             {TokenType::RBRACE, "}"},
             {TokenType::INT, 10},
@@ -103,13 +189,22 @@ namespace interpreter
         for (int i = 0; i < std::min(results.size(), expected.size()); i++)
         {
             REQUIRE(expected[i].mType == results[i].mType);
+            if (expected[i].mType == TokenType::ENDF)
+            {
+                continue;
+            }
+
             if (std::holds_alternative<std::string>(results[i].mLiteral))
             {
                 REQUIRE(std::get<std::string>(expected[i].mLiteral) == std::get<std::string>(results[i].mLiteral));
             }
-            else
+            else if (std::holds_alternative<Number>(results[i].mLiteral))
             {
                 REQUIRE(std::get<Number>(expected[i].mLiteral) == std::get<Number>(results[i].mLiteral));
+            }
+            else
+            {
+                REQUIRE(std::get<bool>(expected[i].mLiteral) == std::get<bool>(results[i].mLiteral));
             }
         }
     }
@@ -128,7 +223,6 @@ namespace interpreter
 
         for (int i = 0; i != 3; i++)
         {
-            std::cout << program->mStatements[i]->Log() << '\n';
             ast::LetStatement* letStatement{ dynamic_cast<ast::LetStatement*>(program->mStatements[i].get()) };
             REQUIRE(letStatement != nullptr);
 
@@ -157,7 +251,6 @@ namespace interpreter
         REQUIRE(program != nullptr);
         REQUIRE(program->mStatements.size() == 1);
         REQUIRE(program->mStatements[0]->mNodeType == ast::NodeType::ExpressionStatement);
-        std::cout << program->mStatements[0]->Log() << '\n';
 
         ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get()) };
         REQUIRE(expressionStatement);
@@ -186,7 +279,6 @@ namespace interpreter
         REQUIRE(program != nullptr);
         REQUIRE(program->mStatements.size() == 1);
         REQUIRE(program->mStatements[0]->mNodeType == ast::NodeType::ExpressionStatement);
-        std::cout << program->mStatements[0]->Log() << '\n';
 
         ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get()) };
         REQUIRE(expressionStatement);
@@ -222,7 +314,6 @@ namespace interpreter
         REQUIRE(program->mStatements.size() == 2);
         for (int i = 0; i != 2; i++)
         {
-            std::cout << program->mStatements[i]->Log() << '\n';
             REQUIRE(program->mStatements[i]->mNodeType == ast::NodeType::ExpressionStatement);
 
             ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[i].get()) };
@@ -246,24 +337,81 @@ namespace interpreter
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
 
-        std::vector<std::string> operatorPrecedenceTests
+        std::string operatorPrecedenceTests
         {
-            "((-a) * b",
-            "(!(-a))",
-            "((a + b) + c)",
-            "((a + b) - c)",
-            "((a * b) * c)",
-            "((a * b) / c)",
-            "(a + (b / c))",
-            "(((a + (b * c)) + (d / e)) - f)",
-            "(3 + 4)((-5) * 5)",
-            "((5 > 4) == (3 < 4))",
-            "((5 < 4) != (3 > 4))",
-            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
-            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+            "((-a) * b)\n"
+            "(!(-a))\n"
+            "((a + b) + c)\n"
+            "((a + b) - c)\n"
+            "((a * b) * c)\n"
+            "((a * b) / c)\n"
+            "(a + (b / c))\n"
+            "(((a + (b * c)) + (d / e)) - f)\n"
+            "(3 + 4)\n((-5) * 5)\n"
+            "((5 > 4) == (3 < 4))\n"
+            "((5 < 4) != (3 > 4))\n"
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n"
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n"
         };
 
         REQUIRE(program != nullptr);
+        REQUIRE(program->Log() == operatorPrecedenceTests);
+    }
+
+    TEST_CASE("BooleanExpressionTests")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/booleanExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+
+        std::vector<bool> booleans{ true,false };
+        std::vector<test::StringAndBool> letTest{ {"foobar", true}, { "boofar", false } };
+
+        for (int i = 0; i != 2; i++)
+        {
+            const auto statement{ program->mStatements[i].get() };
+            REQUIRE(statement->mNodeType == ast::NodeType::ExpressionStatement);
+            const auto expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(statement) };
+            REQUIRE(expressionStatement->mValue);
+            REQUIRE(expressionStatement->mValue->mExpressionType == ast::ExpressionType::BooleanExpression);
+            test::TestPrimitiveExpression(expressionStatement->mValue.get(), booleans[i]);
+        }
+
+        for (int i = 2; i != 4; i++)
+        {
+            const auto statement{ program->mStatements[i].get() };
+            REQUIRE(statement->mNodeType == ast::NodeType::LetStatement);
+            const auto letStatement{ dynamic_cast<ast::LetStatement*>(statement) };
+            test::TestPrimitiveExpression(letStatement->mIdentifier.get(), letTest[i - 2].identifier);
+            test::TestPrimitiveExpression(letStatement->mValue.get(), letTest[i - 2].boolean);
+        }
+        REQUIRE(program != nullptr);
         std::cout << program->Log();
+    }
+
+    TEST_CASE("InfixExpressionTest2")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/infixExpressionTest2.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        std::vector<test::InfixExpressionData> expected{ {true,TokenType::EQ,true},{5,TokenType::NOT_EQ,3},{"you", TokenType::NOT_EQ, "me"} };
+
+        for (int i = 0; i != 3; i++)
+        {
+            ast::Statement* statement{ program->mStatements[i].get() };
+            REQUIRE(statement->mNodeType == ast::NodeType::ExpressionStatement);
+            const auto expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(statement) };
+
+            ast::Expression* expression{ expressionStatement->mValue.get() };
+            REQUIRE(expression);
+            const auto infixExpression{ dynamic_cast<ast::InfixExpression*>(expression) };
+            REQUIRE(infixExpression);
+
+            test::TestInfixExpression(expression, expected[i].left, expected[i].opType, expected[i].right);
+        }
     }
 }

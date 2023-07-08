@@ -27,6 +27,8 @@ namespace interpreter {
                 }
             }
 
+            result << " = ";
+
             if (mValue)
             {
                 result << mValue->Log();
