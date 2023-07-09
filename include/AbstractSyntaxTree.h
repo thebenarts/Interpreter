@@ -201,10 +201,8 @@ namespace interpreter {
 
             // Variables
             Token mToken;   // if token
-            //ConditionBlockStatementUniquePtr mIfConditionBlock;
-            //std::vector<ConditionBlockStatementUniquePtr> mElseIfBlocks;
-            ExpressionUniquePtr mCondition;
-            BlockStatementUniquePtr mConsequence;
+            ConditionBlockStatementUniquePtr mIfConditionBlock;
+            std::vector<ConditionBlockStatementUniquePtr> mElseIfBlocks;
             BlockStatementUniquePtr mAlternative;
         };
 

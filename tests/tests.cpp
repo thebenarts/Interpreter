@@ -436,6 +436,11 @@ namespace interpreter
 
     TEST_CASE("IfExpressionTest")
     {
+        //  if (x < y)
+        //  {
+        //      x
+        //  }
+
         std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/ifExpressionTest.txt") };
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
@@ -453,10 +458,23 @@ namespace interpreter
         const auto ifExpression{ dynamic_cast<ast::IfExpression*>(expression) };
         REQUIRE(ifExpression);
 
-        test::TestInfixExpression(ifExpression->mCondition.get(), "x", TokenType::LT, "y");
-        REQUIRE(ifExpression->mConsequence);
-        REQUIRE(ifExpression->mConsequence->mStatements.size() == 1);
-        ast::Statement* consequenceStatement{ ifExpression->mConsequence->mStatements[0].get()};
+        ast::Statement* ifStatement{ ifExpression->mIfConditionBlock.get() };
+        REQUIRE(ifStatement);
+        REQUIRE(ifStatement->mNodeType == ast::NodeType::ConditionBlockStatement);
+        const auto ifConditionBlockStatement{ dynamic_cast<ast::ConditionBlockStatement*>(ifStatement) };
+        REQUIRE(ifConditionBlockStatement);
+
+        ast::Expression* ifConditionExpression{ ifConditionBlockStatement->mCondition.get() };
+        REQUIRE(ifConditionExpression);
+        test::TestInfixExpression(ifConditionExpression, "x", TokenType::LT, "y");
+
+        ast::Statement* ifBStatement{ ifConditionBlockStatement->mBlock.get() };
+        REQUIRE(ifBStatement);
+        REQUIRE(ifBStatement->mNodeType == ast::NodeType::BlockStatement);
+        const auto ifBlockStatement{ dynamic_cast<ast::BlockStatement*>(ifBStatement) };
+        REQUIRE(ifBlockStatement);
+        REQUIRE(ifBlockStatement->mStatements.size() == 1);
+        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get()};
         REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
         const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
         REQUIRE(consequenceExpressionStatement);
@@ -484,15 +502,29 @@ namespace interpreter
         const auto ifExpression{ dynamic_cast<ast::IfExpression*>(expression) };
         REQUIRE(ifExpression);
 
-        test::TestInfixExpression(ifExpression->mCondition.get(), "x", TokenType::LT, "y");
-        REQUIRE(ifExpression->mConsequence);
-        REQUIRE(ifExpression->mConsequence->mStatements.size() == 1);
-        ast::Statement* consequenceStatement{ ifExpression->mConsequence->mStatements[0].get()};
+        ast::Statement* ifStatement{ ifExpression->mIfConditionBlock.get() };
+        REQUIRE(ifStatement);
+        REQUIRE(ifStatement->mNodeType == ast::NodeType::ConditionBlockStatement);
+        const auto ifConditionBlockStatement{ dynamic_cast<ast::ConditionBlockStatement*>(ifStatement) };
+        REQUIRE(ifConditionBlockStatement);
+
+        ast::Expression* ifConditionExpression{ ifConditionBlockStatement->mCondition.get() };
+        REQUIRE(ifConditionExpression);
+        test::TestInfixExpression(ifConditionExpression, "x", TokenType::LT, "y");
+
+        ast::Statement* ifBStatement{ ifConditionBlockStatement->mBlock.get() };
+        REQUIRE(ifBStatement);
+        REQUIRE(ifBStatement->mNodeType == ast::NodeType::BlockStatement);
+        const auto ifBlockStatement{ dynamic_cast<ast::BlockStatement*>(ifBStatement) };
+        REQUIRE(ifBlockStatement);
+        REQUIRE(ifBlockStatement->mStatements.size() == 1);
+        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get()};
         REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
         const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
         REQUIRE(consequenceExpressionStatement);
         REQUIRE(consequenceExpressionStatement->mValue);
         test::TestPrimitiveExpression(consequenceExpressionStatement->mValue.get(), "x");
+
         REQUIRE(ifExpression->mAlternative);
         ast::Statement* alternativeStatement{ ifExpression->mAlternative->mStatements[0].get()};
         REQUIRE(alternativeStatement);
@@ -502,11 +534,72 @@ namespace interpreter
         test::TestPrimitiveExpression(alternativeExpressionStatement->mValue.get(), "y");
     }
 
-    //TEST_CASE("ElseIfTest")
-    //{
-    //    std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/elseIfTest.txt") };
-    //    interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
-    //    interpreter::Parser parser{ std::move(lexer) };
-    //    interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
-    //}
+    TEST_CASE("ElseIfTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/elseIfTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        REQUIRE(program->mStatements.size() == 1);
+        ast::Statement* statement{ program->mStatements[0].get() };
+        REQUIRE(statement->mNodeType == ast::NodeType::ExpressionStatement);
+        const auto expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(statement) };
+        REQUIRE(expressionStatement);
+
+        REQUIRE(expressionStatement->mValue);
+        ast::Expression* expression{ expressionStatement->mValue.get() };
+        REQUIRE(expression->mExpressionType == ast::ExpressionType::IfExpression);
+        const auto ifExpression{ dynamic_cast<ast::IfExpression*>(expression) };
+        REQUIRE(ifExpression);
+
+        ast::Statement* ifStatement{ ifExpression->mIfConditionBlock.get() };
+        REQUIRE(ifStatement);
+        REQUIRE(ifStatement->mNodeType == ast::NodeType::ConditionBlockStatement);
+        const auto ifConditionBlockStatement{ dynamic_cast<ast::ConditionBlockStatement*>(ifStatement) };
+        REQUIRE(ifConditionBlockStatement);
+
+        ast::Expression* ifConditionExpression{ ifConditionBlockStatement->mCondition.get() };
+        REQUIRE(ifConditionExpression);
+        test::TestInfixExpression(ifConditionExpression, "x", TokenType::LT, "y");
+
+        ast::Statement* ifBStatement{ ifConditionBlockStatement->mBlock.get() };
+        REQUIRE(ifBStatement);
+        REQUIRE(ifBStatement->mNodeType == ast::NodeType::BlockStatement);
+        const auto ifBlockStatement{ dynamic_cast<ast::BlockStatement*>(ifBStatement) };
+        REQUIRE(ifBlockStatement);
+        REQUIRE(ifBlockStatement->mStatements.size() == 1);
+        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get()};
+        REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
+        const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
+        REQUIRE(consequenceExpressionStatement);
+        REQUIRE(consequenceExpressionStatement->mValue);
+        test::TestPrimitiveExpression(consequenceExpressionStatement->mValue.get(), "work");
+
+        std::vector<test::InfixExpressionData> testData{ {5, TokenType::LT, 4}, {4, TokenType::NOT_EQ, 5} };
+        REQUIRE(!ifExpression->mElseIfBlocks.empty());
+        for (int i = 0; i != 2; i++)
+        {
+            ast::ConditionBlockStatement* elseConditionBlock{ ifExpression->mElseIfBlocks[i].get() };
+            REQUIRE(elseConditionBlock);
+            ast::Expression* elseCondition{ elseConditionBlock->mCondition.get() };
+            REQUIRE(elseCondition);
+            test::TestInfixExpression(elseCondition, testData[i].left, testData[i].opType, testData[i].right);
+            REQUIRE(elseConditionBlock->mBlock);
+            ast::Statement* elseStatement{ elseConditionBlock->mBlock->mStatements[0].get() };
+            REQUIRE(elseStatement);
+            const auto elseExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(elseStatement) };
+            REQUIRE(elseExpressionStatement);
+            test::TestPrimitiveExpression(elseExpressionStatement->mValue.get(), "work");
+        }
+
+        REQUIRE(ifExpression->mAlternative);
+        ast::Statement* alternativeStatement{ ifExpression->mAlternative->mStatements[0].get()};
+        REQUIRE(alternativeStatement);
+        const auto alternativeExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(alternativeStatement) };
+        REQUIRE(alternativeExpressionStatement);
+        REQUIRE(alternativeExpressionStatement->mValue);
+        test::TestPrimitiveExpression(alternativeExpressionStatement->mValue.get(), "work");
+        std::cout << program->Log();
+    }
 }

@@ -220,16 +220,33 @@ namespace interpreter
         return blockStatement;
     }
 
-    //ConditionBlockStatementUniquePtr Parser::ParseConditionBlockStatement()
-    //{
-    //    auto constionBlockStatement{ std::make_unique<ast::ConditionBlockStatement>() };
-    //    if (!ExpectNextTokenIs(TokenType::LPAREN))
-    //    {
-    //        return nullptr;
-    //    }
-    //    AdvanceToken(); // Advance from "if" token -> "(" 
-    //    AdvanceToken(); // Advance from "{" token -> ? we expect an expression to be here as the condition
-    //}
+    ConditionBlockStatementUniquePtr Parser::ParseConditionBlockStatement()
+    {
+        auto conditionBlockStatement{ std::make_unique<ast::ConditionBlockStatement>() };
+        if (!ExpectNextTokenIs(TokenType::LPAREN))
+        {
+            return nullptr;
+        }
+        conditionBlockStatement->mToken = *GetCurrentToken();   // "if" || "else if" token
+        AdvanceToken(); // Advance from "if" || "else if" token -> "(" 
+        AdvanceToken(); // Advance from "{" token -> ? we expect an expression to be here as the condition
+        conditionBlockStatement->mCondition = ParseExpression(ast::Precedence::LOWEST);
+
+        if (!ExpectNextTokenIs(TokenType::RPAREN))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // Advance to ")"
+
+        if (!ExpectNextTokenIs(TokenType::LBRACE))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // Advance from ")" -> "{"
+        conditionBlockStatement->mBlock = ParseBlockStatement();
+
+        return conditionBlockStatement;
+    }
 
     ExpressionUniquePtr Parser::ParseExpression(ast::Precedence precedence)
     {
@@ -349,23 +366,18 @@ namespace interpreter
         {
             return nullptr;
         }
-        AdvanceToken(); // Advance from "if" token -> "(" 
-        AdvanceToken(); // Advance from "{" token -> ? we expect an expression to be here as the condition
-        expression->mCondition = ParseExpression(ast::Precedence::LOWEST);
+        // Parse If condition block
+        expression->mIfConditionBlock = ParseConditionBlockStatement();
 
-        if (!ExpectNextTokenIs(TokenType::RPAREN))
+        while (GetNextToken() && NextTokenIs(TokenType::ELSE_IF))
         {
-            return nullptr;
+            AdvanceToken(); // Advance from "}" -> "else if"
+            ConditionBlockStatementUniquePtr elseIfStatementBlock{ ParseConditionBlockStatement() };
+            if (elseIfStatementBlock)
+            {
+                expression->mElseIfBlocks.push_back(std::move(elseIfStatementBlock));
+            }
         }
-        AdvanceToken(); // Advance to ")"
-
-        if (!ExpectNextTokenIs(TokenType::LBRACE))
-        {
-            return nullptr;
-        }
-        AdvanceToken(); // Advance from ")" -> "{"
-
-        expression->mConsequence = ParseBlockStatement();
 
         if (NextTokenIs(TokenType::ELSE))
         {

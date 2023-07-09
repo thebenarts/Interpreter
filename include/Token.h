@@ -127,6 +127,7 @@ namespace interpreter
         {TokenType::LET},
         {TokenType::IF},
         {TokenType::ELSE},
+        {TokenType::ELSE_IF},
         {TokenType::RETURN}
     };
 

@@ -108,12 +108,10 @@ namespace interpreter {
             result << *tokenNode;
             VERIFY(mCondition);
             result << mCondition->Log();
-            result << "{ " ;
             if (mBlock)
             {
                 result << mBlock->Log();
             }
-            result << " }";
 
             return result.str();
         }
@@ -179,7 +177,7 @@ namespace interpreter {
             return result.str();
         }
 
-        // ------------------------------------------------------------ Infix Expression -----------------------------------------------------
+        // ------------------------------------------------------------ If Expression -----------------------------------------------------
 
         std::optional<Token> IfExpression::TokenNode() { return mToken; }
         std::optional<Token> IfExpression::ExpressionNode() { return {}; }
@@ -188,16 +186,18 @@ namespace interpreter {
         {
             std::ostringstream result;
 
-            result << "if";
-            VERIFY(mCondition)
+            VERIFY(mIfConditionBlock)
             {
-                result << mCondition->Log();
+                result << mIfConditionBlock->Log();
+            }
+            if (!mElseIfBlocks.empty())
+            {
+                for (const auto& conditionBlock : mElseIfBlocks)
+                {
+                    result << conditionBlock->Log();
+                }
             }
             result << " ";
-            VERIFY(mConsequence)
-            {
-                result << mConsequence->Log();
-            }
 
             if (mAlternative)
             {

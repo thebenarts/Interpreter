@@ -28,7 +28,7 @@ namespace interpreter
         ReturnStatementUniquePtr ParseReturnStatement();
         ExpressionStatementUniquePtr ParseExpressionStatement();
         BlockStatementUniquePtr ParseBlockStatement();
-        //ConditionBlockStatementUniquePtr ParseConditionBlockStatement();
+        ConditionBlockStatementUniquePtr ParseConditionBlockStatement();
         // Parse Expressions
         ExpressionUniquePtr ParseExpression(ast::Precedence precedence);
         ExpressionUniquePtr ParsePrimitiveExpression();

@@ -1,4 +1,9 @@
-if(test)
+if(x < y)
 { work }
-else if(please)
+else if(5 < 4)
 { work }
+else if(4 != 5)
+{
+work
+}
+else { work }
