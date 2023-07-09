@@ -32,6 +32,8 @@ namespace interpreter
         RegisterPrefixFunctionPtr(TokenType::INT, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::BANG, std::bind(&Parser::ParsePrefixExpression, this));
         RegisterPrefixFunctionPtr(TokenType::MINUS, std::bind(&Parser::ParsePrefixExpression, this));
+        RegisterPrefixFunctionPtr(TokenType::LPAREN, std::bind(&Parser::ParseGroupedExpression, this));
+        RegisterPrefixFunctionPtr(TokenType::IF, std::bind(&Parser::ParseIfExpression, this));
 
         // Register Infix Function pointers
         {
@@ -135,7 +137,7 @@ namespace interpreter
         // We only land here after checking the CurrentToken in ParseStatement so it is safe to dereference without checking here 
         statement->mToken = *GetCurrentToken();
 
-        if (!ExpectPeekTokenIs(TokenType::IDENT))
+        if (!ExpectNextTokenIs(TokenType::IDENT))
         {
             return nullptr;
         }
@@ -148,7 +150,7 @@ namespace interpreter
             statement->mIdentifier = std::move(ParsePrimitiveExpression());
         }
 
-        if (!ExpectPeekTokenIs(TokenType::ASSIGN))
+        if (!ExpectNextTokenIs(TokenType::ASSIGN))
         {
             return nullptr;
         }
@@ -197,6 +199,38 @@ namespace interpreter
         return statement;
     }
 
+    BlockStatementUniquePtr Parser::ParseBlockStatement()
+    {
+        auto blockStatement{ std::make_unique<ast::BlockStatement>() };
+        blockStatement->mToken = *GetCurrentToken(); // Should be "{"
+
+        AdvanceToken();
+
+        while (GetCurrentToken() && !CurrentTokenIs(TokenType::RBRACE) && !CurrentTokenIs(TokenType::ENDF))
+        {
+            auto statement{ ParseStatement() };
+            if (statement)
+            {
+                blockStatement->mStatements.push_back(std::move(statement));
+            }
+
+            AdvanceToken();
+        }
+
+        return blockStatement;
+    }
+
+    //ConditionBlockStatementUniquePtr Parser::ParseConditionBlockStatement()
+    //{
+    //    auto constionBlockStatement{ std::make_unique<ast::ConditionBlockStatement>() };
+    //    if (!ExpectNextTokenIs(TokenType::LPAREN))
+    //    {
+    //        return nullptr;
+    //    }
+    //    AdvanceToken(); // Advance from "if" token -> "(" 
+    //    AdvanceToken(); // Advance from "{" token -> ? we expect an expression to be here as the condition
+    //}
+
     ExpressionUniquePtr Parser::ParseExpression(ast::Precedence precedence)
     {
         if (const Token * token{ GetCurrentToken() })
@@ -210,7 +244,8 @@ namespace interpreter
                 expression = prefixFunctionPtr();
             }
 
-            while (!NextTokenIs(TokenType::SEMICOLON) && precedence < GetNextPrecedence())
+            // Added the safe check of GetNextToken() to safeguard the NextTokenIs(), technically speaking we wouldn't need either but it's more readable this way.
+            while (GetNextToken() && !NextTokenIs(TokenType::SEMICOLON) && precedence < GetNextPrecedence())
             {
                 const auto nextToken{ GetNextToken() };
                 if (!nextToken)
@@ -292,6 +327,61 @@ namespace interpreter
         return expression;
     }
 
+    ExpressionUniquePtr Parser::ParseGroupedExpression()
+    {
+        AdvanceToken(); // Advance past (
+
+        ExpressionUniquePtr expression{ ParseExpression(ast::Precedence::LOWEST) };
+
+        if (!NextTokenIs(TokenType::RPAREN))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // Advance Past )
+
+        return expression;
+    }
+
+    ExpressionUniquePtr Parser::ParseIfExpression()
+    {
+        auto expression{ std::make_unique<ast::IfExpression>() };
+        if (!ExpectNextTokenIs(TokenType::LPAREN))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // Advance from "if" token -> "(" 
+        AdvanceToken(); // Advance from "{" token -> ? we expect an expression to be here as the condition
+        expression->mCondition = ParseExpression(ast::Precedence::LOWEST);
+
+        if (!ExpectNextTokenIs(TokenType::RPAREN))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // Advance to ")"
+
+        if (!ExpectNextTokenIs(TokenType::LBRACE))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // Advance from ")" -> "{"
+
+        expression->mConsequence = ParseBlockStatement();
+
+        if (NextTokenIs(TokenType::ELSE))
+        {
+            AdvanceToken(); // Advance from "}" -> "else"
+
+            if (!ExpectNextTokenIs(TokenType::LBRACE))
+            {
+                return nullptr;
+            }
+            AdvanceToken(); // Advance from "else" -> "{" 
+            expression->mAlternative = ParseBlockStatement();
+        }
+
+        return expression;
+    }
+
     ast::Precedence Parser::GetNextPrecedence()
     {
         auto token{ GetNextToken() };
@@ -347,10 +437,9 @@ namespace interpreter
     bool Parser::TokenIs(const Token& token, TokenType tokenType)
     {
         return token.mType == tokenType;
-        
     }
 
-    bool Parser::ExpectPeekTokenIs(TokenType expectedType)
+    bool Parser::ExpectNextTokenIs(TokenType expectedType)
     {
         if (const Token* peekToken{ GetNextToken() })
         {

@@ -27,11 +27,15 @@ namespace interpreter
         LetStatementUniquePtr ParseLetStatement();
         ReturnStatementUniquePtr ParseReturnStatement();
         ExpressionStatementUniquePtr ParseExpressionStatement();
+        BlockStatementUniquePtr ParseBlockStatement();
+        //ConditionBlockStatementUniquePtr ParseConditionBlockStatement();
         // Parse Expressions
         ExpressionUniquePtr ParseExpression(ast::Precedence precedence);
         ExpressionUniquePtr ParsePrimitiveExpression();
         ExpressionUniquePtr ParsePrefixExpression();
         ExpressionUniquePtr ParseInfixExpression(ExpressionUniquePtr leftExpression);
+        ExpressionUniquePtr ParseGroupedExpression();
+        ExpressionUniquePtr ParseIfExpression();
 
 
         // Expression precedence helpers
@@ -48,7 +52,7 @@ namespace interpreter
         bool NextTokenIs(TokenType tokenType);
         bool CurrentTokenIs(TokenType tokenType);
         bool TokenIs(const Token& token, TokenType tokenType);
-        bool ExpectPeekTokenIs(TokenType tokenType);
+        bool ExpectNextTokenIs(TokenType tokenType);
         // Parse variables
         PrefixFunctionPtrMap mPrefixFunctionPtrMap;
         InfixFunctionPtrMap mInfixFunctionPtrMap;

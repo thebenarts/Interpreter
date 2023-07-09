@@ -38,6 +38,8 @@ namespace interpreter {
             LetStatement,
             ReturnStatement,
             ExpressionStatement,
+            BlockStatement,
+            ConditionBlockStatement,
             Program,
         };
 
@@ -50,6 +52,7 @@ namespace interpreter {
             BooleanExpression,
             PrefixExpression,
             InfixExpression,
+            IfExpression
         };
 
         struct Node
@@ -100,6 +103,35 @@ namespace interpreter {
             // Variables
             Token mToken;                       // return Token
             ExpressionUniquePtr mValue;         // Return value expression
+        };
+
+        struct BlockStatement : public Statement
+        {
+            BlockStatement() { mNodeType = NodeType::BlockStatement; }
+            virtual ~BlockStatement() {};
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> StatementNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken; // the { token
+            std::vector<StatementUniquePtr> mStatements;
+        };
+
+        struct ConditionBlockStatement : public Statement
+        {
+            ConditionBlockStatement() { mNodeType = NodeType::ConditionBlockStatement; }
+            virtual ~ConditionBlockStatement() {};
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> StatementNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken; // the conditional token == "if" || "else if" || "else"
+            ExpressionUniquePtr mCondition;     // This will be empty if it's an "else"
+            BlockStatementUniquePtr mBlock;     // holds the statement 
         };
 
         struct ExpressionStatement : public Statement
@@ -156,6 +188,24 @@ namespace interpreter {
             ExpressionUniquePtr mLeftExpression;
             Token mToken;   // The operator token, e.g. +,- etc.
             ExpressionUniquePtr mRightExpression;
+        };
+
+        struct IfExpression : public Expression
+        {
+            IfExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::IfExpression; }
+            virtual ~IfExpression(){}
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> ExpressionNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;   // if token
+            //ConditionBlockStatementUniquePtr mIfConditionBlock;
+            //std::vector<ConditionBlockStatementUniquePtr> mElseIfBlocks;
+            ExpressionUniquePtr mCondition;
+            BlockStatementUniquePtr mConsequence;
+            BlockStatementUniquePtr mAlternative;
         };
 
         struct Program

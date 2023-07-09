@@ -17,9 +17,9 @@ namespace interpreter
 
         struct InfixExpressionData
         {
-            std::variant<std::string, Number, bool> left;
+            TokenPrimitive left;
             TokenType opType;
-            std::variant<std::string, Number, bool>right;
+            TokenPrimitive right;
         };
 
         bool TestIdentifier(ast::Expression* expression, std::string_view expectedValue)
@@ -54,7 +54,7 @@ namespace interpreter
             return true;
         }
 
-        bool TestPrimitiveExpression(ast::Expression* expression, std::variant<std::string, Number, bool> expectedValue)
+        bool TestPrimitiveExpression(ast::Expression* expression, TokenPrimitive expectedValue)
         {
             std::visit([&expression](auto&& arg) {
                 using ExpectedType = std::decay_t<decltype(arg)>;
@@ -94,6 +94,7 @@ namespace interpreter
             return true;
         }
     }
+
     TEST_CASE("LEXER TEST")
     {
         // TestData 
@@ -388,7 +389,6 @@ namespace interpreter
             test::TestPrimitiveExpression(letStatement->mValue.get(), letTest[i - 2].boolean);
         }
         REQUIRE(program != nullptr);
-        std::cout << program->Log();
     }
 
     TEST_CASE("InfixExpressionTest2")
@@ -414,4 +414,99 @@ namespace interpreter
             test::TestInfixExpression(expression, expected[i].left, expected[i].opType, expected[i].right);
         }
     }
+
+    TEST_CASE("GroupedExpressionsTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/groupedExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        std::string groupedExpressionTest{
+            "((1 + (2 + 3)) + 4)\n"
+            "((5 + 5) * 2)\n"
+            "(2 / (5 + 5))\n"
+            "(-(5 + 5))\n"
+            "(!(true == true))\n"
+        };
+
+        REQUIRE(program != nullptr);
+        REQUIRE(program->Log() == groupedExpressionTest);
+    }
+
+    TEST_CASE("IfExpressionTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/ifExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        REQUIRE(program->mStatements.size() == 1);
+        ast::Statement* statement{ program->mStatements[0].get() };
+        REQUIRE(statement->mNodeType == ast::NodeType::ExpressionStatement);
+        const auto expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(statement) };
+        REQUIRE(expressionStatement);
+
+        REQUIRE(expressionStatement->mValue);
+        ast::Expression* expression{ expressionStatement->mValue.get() };
+        REQUIRE(expression->mExpressionType == ast::ExpressionType::IfExpression);
+        const auto ifExpression{ dynamic_cast<ast::IfExpression*>(expression) };
+        REQUIRE(ifExpression);
+
+        test::TestInfixExpression(ifExpression->mCondition.get(), "x", TokenType::LT, "y");
+        REQUIRE(ifExpression->mConsequence);
+        REQUIRE(ifExpression->mConsequence->mStatements.size() == 1);
+        ast::Statement* consequenceStatement{ ifExpression->mConsequence->mStatements[0].get()};
+        REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
+        const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
+        REQUIRE(consequenceExpressionStatement);
+        REQUIRE(consequenceExpressionStatement->mValue);
+        test::TestPrimitiveExpression(consequenceExpressionStatement->mValue.get(), "x");
+        REQUIRE(!ifExpression->mAlternative);
+    }
+
+    TEST_CASE("IfElseExpressionTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/ifElseExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        REQUIRE(program->mStatements.size() == 1);
+        ast::Statement* statement{ program->mStatements[0].get() };
+        REQUIRE(statement->mNodeType == ast::NodeType::ExpressionStatement);
+        const auto expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(statement) };
+        REQUIRE(expressionStatement);
+
+        REQUIRE(expressionStatement->mValue);
+        ast::Expression* expression{ expressionStatement->mValue.get() };
+        REQUIRE(expression->mExpressionType == ast::ExpressionType::IfExpression);
+        const auto ifExpression{ dynamic_cast<ast::IfExpression*>(expression) };
+        REQUIRE(ifExpression);
+
+        test::TestInfixExpression(ifExpression->mCondition.get(), "x", TokenType::LT, "y");
+        REQUIRE(ifExpression->mConsequence);
+        REQUIRE(ifExpression->mConsequence->mStatements.size() == 1);
+        ast::Statement* consequenceStatement{ ifExpression->mConsequence->mStatements[0].get()};
+        REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
+        const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
+        REQUIRE(consequenceExpressionStatement);
+        REQUIRE(consequenceExpressionStatement->mValue);
+        test::TestPrimitiveExpression(consequenceExpressionStatement->mValue.get(), "x");
+        REQUIRE(ifExpression->mAlternative);
+        ast::Statement* alternativeStatement{ ifExpression->mAlternative->mStatements[0].get()};
+        REQUIRE(alternativeStatement);
+        const auto alternativeExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(alternativeStatement) };
+        REQUIRE(alternativeExpressionStatement);
+        REQUIRE(alternativeExpressionStatement->mValue);
+        test::TestPrimitiveExpression(alternativeExpressionStatement->mValue.get(), "y");
+    }
+
+    //TEST_CASE("ElseIfTest")
+    //{
+    //    std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/elseIfTest.txt") };
+    //    interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+    //    interpreter::Parser parser{ std::move(lexer) };
+    //    interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+    //}
 }

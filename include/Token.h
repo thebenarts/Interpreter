@@ -48,13 +48,14 @@ namespace interpreter
         FALSE,
         IF,
         ELSE,
+        ELSE_IF,
         RETURN,
     };
 
     struct Token
     {
         TokenType mType;
-        std::variant<std::string, Number, bool> mLiteral;
+        TokenPrimitive mLiteral;
         int32_t mLineNumber;
         CharacterRange mCharacterRange[2];
     };
@@ -68,6 +69,7 @@ namespace interpreter
         {"false", TokenType::FALSE},
         {"if", TokenType::IF},
         {"else",TokenType::ELSE},
+        {"else if", TokenType::ELSE_IF},
         {"return", TokenType::RETURN}
     };
 

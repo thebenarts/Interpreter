@@ -77,6 +77,47 @@ namespace interpreter {
             return result.str();
         }
 
+        // ------------------------------------------------------------ Block Statement -----------------------------------------------------
+
+        std::optional<Token> BlockStatement::TokenNode() { return mToken; }
+        std::optional<Token> BlockStatement::StatementNode() { return {}; }
+
+        std::string BlockStatement::Log()
+        {
+            std::ostringstream result;
+            result << "{ ";
+            for (const auto& statement : mStatements)
+            {
+                result << statement->Log();
+            }
+            result << " }";
+
+            return result.str();
+        }
+
+        // ------------------------------------------------------------ Condition Block Statement -----------------------------------------------------
+
+        std::optional<Token> ConditionBlockStatement::TokenNode() { return mToken; }
+        std::optional<Token> ConditionBlockStatement::StatementNode() { return {}; }
+
+        std::string ConditionBlockStatement::Log()
+        {
+            std::ostringstream result;
+            const auto tokenNode{ TokenNode() };
+            VERIFY(tokenNode);
+            result << *tokenNode;
+            VERIFY(mCondition);
+            result << mCondition->Log();
+            result << "{ " ;
+            if (mBlock)
+            {
+                result << mBlock->Log();
+            }
+            result << " }";
+
+            return result.str();
+        }
+
         // ------------------------------------------------------------ Primitive Expression -----------------------------------------------------
 
         std::optional<Token> PrimitiveExpression::TokenNode() { return mToken; }
@@ -135,6 +176,34 @@ namespace interpreter {
             }
 
             result << ")";
+            return result.str();
+        }
+
+        // ------------------------------------------------------------ Infix Expression -----------------------------------------------------
+
+        std::optional<Token> IfExpression::TokenNode() { return mToken; }
+        std::optional<Token> IfExpression::ExpressionNode() { return {}; }
+
+        std::string IfExpression::Log()
+        {
+            std::ostringstream result;
+
+            result << "if";
+            VERIFY(mCondition)
+            {
+                result << mCondition->Log();
+            }
+            result << " ";
+            VERIFY(mConsequence)
+            {
+                result << mConsequence->Log();
+            }
+
+            if (mAlternative)
+            {
+                result << " else " << mAlternative->Log();
+            }
+
             return result.str();
         }
 
