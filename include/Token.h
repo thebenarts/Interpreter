@@ -3,6 +3,8 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
+#include <variant>
 #include "ForwardDeclares.h"
 
 namespace interpreter
@@ -42,34 +44,36 @@ namespace interpreter
         // Keywords
         FUNCTION,
         LET,
-        True,
-        False,
+        TRUE,
+        FALSE,
         IF,
         ELSE,
+        ELSE_IF,
         RETURN,
-
     };
 
     struct Token
     {
         TokenType mType;
-        std::string mLiteral;
+        TokenPrimitive mLiteral;
         int32_t mLineNumber;
         CharacterRange mCharacterRange[2];
     };
+    std::ostream& operator<<(std::ostream& out, const Token& token);
 
-    static std::unordered_map<std::string, TokenType> sKeywordsMap
+    const std::unordered_map<std::string, TokenType> sKeywordsMap
     {
         {"fn",TokenType::FUNCTION},
         {"let", TokenType::LET},
-        {"true", TokenType::True},
-        {"false", TokenType::False},
+        {"true", TokenType::TRUE},
+        {"false", TokenType::FALSE},
         {"if", TokenType::IF},
         {"else",TokenType::ELSE},
+        {"else if", TokenType::ELSE_IF},
         {"return", TokenType::RETURN}
     };
 
-    static std::unordered_map<TokenType, std::string> sTokenTypeToStringMap
+    const std::unordered_map<TokenType, std::string> sTokenTypeToStringMap
     {
         {TokenType::ILLEGAL,"ILLEGAL"},
         {TokenType::ENDF, "EOF"},
@@ -93,11 +97,49 @@ namespace interpreter
         {TokenType::RBRACE, "RBRACE"},
         {TokenType::FUNCTION, "FUNCTION"},
         {TokenType::LET, "LET"},
-        {TokenType::True, "TRUE"},
-        {TokenType::False, "FALSE"},
+        {TokenType::TRUE, "TRUE"},
+        {TokenType::FALSE, "FALSE"},
         {TokenType::IF, "IF"},
         {TokenType::ELSE, "ELSE"},
         {TokenType::RETURN, "RETURN"}
+    };
+
+    const std::unordered_set<TokenType> sStringTokens
+    {
+        {TokenType::IDENT},
+        {TokenType::ASSIGN},
+        {TokenType::PLUS},
+        {TokenType::MINUS},
+        {TokenType::BANG},
+        {TokenType::ASTERISK},
+        {TokenType::SLASH},
+        {TokenType::LT},
+        {TokenType::GT},
+        {TokenType::EQ},
+        {TokenType::NOT_EQ},
+        {TokenType::COMMA},
+        {TokenType::SEMICOLON},
+        {TokenType::LPAREN},
+        {TokenType::RPAREN},
+        {TokenType::LBRACE},
+        {TokenType::RBRACE},
+        {TokenType::FUNCTION},
+        {TokenType::LET},
+        {TokenType::IF},
+        {TokenType::ELSE},
+        {TokenType::ELSE_IF},
+        {TokenType::RETURN}
+    };
+
+    const std::unordered_set<TokenType> sNumberTokens
+    {
+        {TokenType::INT}
+    };
+
+    const std::unordered_set<TokenType> sBooleanTokens
+    {
+        {TokenType::TRUE},
+        {TokenType::FALSE}
     };
 
 }

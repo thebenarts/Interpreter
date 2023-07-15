@@ -18,7 +18,7 @@ namespace interpreter
         {
             mChar = *mPosition;
         }
-        
+
         Tokenize();
     }
 
@@ -34,10 +34,10 @@ namespace interpreter
         case 0: utility::AssignToToken(token, TokenType::ENDF, "\0", SetCharacterRange());
             return token;
             break;
-        case '=': 
+        case '=':
             if (PeekCharacter() == '=')
             {
-                const std::string literal{ mChar,PeekCharacter()};
+                const std::string literal{ mChar,PeekCharacter() };
                 utility::AssignToToken(token, TokenType::EQ, literal, SetCharacterRange(1));
                 AdvanceCharacter();
             }
@@ -50,11 +50,11 @@ namespace interpreter
             break;
         case '-': utility::AssignToToken(token, TokenType::MINUS, mChar, SetCharacterRange());
             break;
-        case '!': 
+        case '!':
             if (PeekCharacter() == '=')
             {
-                const std::string literal{ mChar,PeekCharacter()};
-                utility::AssignToToken(token, TokenType::NOT_EQ,literal, SetCharacterRange(1));
+                const std::string literal{ mChar,PeekCharacter() };
+                utility::AssignToToken(token, TokenType::NOT_EQ, literal, SetCharacterRange(1));
                 AdvanceCharacter();
             }
             else
@@ -85,10 +85,29 @@ namespace interpreter
         default:
             if (utility::IsLetter(mChar))
             {
-                std::string_view identifier{ ReadIdentifier()};
+                std::string_view identifier{ ReadIdentifier() };
                 // TODO: think of a way to unify range input.
                 // Due to how we built character ranges we have to directly pass the range in the case of traversed ranges
-                utility::AssignToToken(token, utility::DeriveIdentifierToken(identifier), identifier,mCharacterRange); 
+                TokenType tokenType{ utility::DeriveIdentifierToken(identifier) };
+                if (sBooleanTokens.contains(tokenType))
+                {
+                    utility::AssignToToken(token, tokenType, bool{ tokenType == TokenType::TRUE }, mCharacterRange);
+                }
+                else if (tokenType == TokenType::ELSE) // Brute force check for else if
+                {
+                    if (std::string_view elseIfString{ CheckElseIf() }; !elseIfString.empty())
+                    {
+                        utility::AssignToToken(token, TokenType::ELSE_IF, elseIfString, mCharacterRange);
+                    }
+                    else    // It's a regular else
+                    {
+                        utility::AssignToToken(token, TokenType::ELSE, identifier, mCharacterRange);
+                    }
+                }
+                else
+                {
+                    utility::AssignToToken(token, tokenType, identifier, mCharacterRange);
+                }
                 return token;
             }
             else if (utility::IsDigit(mChar))
@@ -96,10 +115,10 @@ namespace interpreter
                 std::string_view number{ ReadNumber() };
                 // TODO: think of a way to unify range input.
                 // Due to how we built character ranges we have to directly pass the range in the case of traversed ranges
-                utility::AssignToToken(token, TokenType::INT, number, mCharacterRange);
+                utility::AssignToToken(token, TokenType::INT, utility::ToNumber(number), mCharacterRange);
                 return token;
             }
-            else 
+            else
             {
                 utility::AssignToToken(token, TokenType::ILLEGAL, mChar, SetCharacterRange());
             }
@@ -181,16 +200,17 @@ namespace interpreter
     std::string_view Lexer::ReadIdentifier()
     {
         mCharacterRange[0] = mCharacterNumber;
-        for (; mReadPosition != mInput.end() && utility::IsLetter(*mReadPosition); mReadPosition++)
+        for (; mReadPosition != mInput.end() && (utility::IsLetter(*mReadPosition) || utility::IsDigit(*mReadPosition)); mReadPosition++)
         {
         }
 
         mCharacterRange[1] = mCharacterRange[0] + (mReadPosition - mPosition) - 1;
         mCharacterNumber = mCharacterRange[1];
         std::string_view result{ mPosition, mReadPosition };
-        AdvanceCharacter();
+        AdvanceCharacter(); // Advances mReadPosition + 1 and mPosition gets advanced to where mReadPosition used to be
         return result;
     }
+
 
     std::string_view Lexer::ReadNumber()
     {
@@ -204,5 +224,53 @@ namespace interpreter
         std::string_view result{ mPosition, mReadPosition };
         AdvanceCharacter();
         return result;
+    }
+
+    std::string_view Lexer::CheckElseIf()
+    {
+        // We only enter this function when "else" has been encountered 
+        // mPosition is on the last character of the identifier
+        // mReadPosition should be one past the last character of the identifier. i.e. whitespace or "{" or statement
+        // TODO: come back and optimize this.
+        // Store the state of the lexer here in case it's just a regular else
+        std::string::const_iterator elseStartIter{ mPosition - 4 };     // pointing to first e of "else"
+        std::string::const_iterator elseEndIter{ mPosition };           // pointing to last e of "else"
+        std::string::const_iterator readIter{ mReadPosition };          // pointing one past last e of "else"
+
+        CharacterRange originalCharacterNumber{ mCharacterNumber };
+        CharacterRange originalRange[2];
+        memcpy(originalRange, mCharacterRange, 2 * sizeof(CharacterRange));
+        int32_t originalLineNumber{ mLineNumber };
+        char originalChar{ mChar };
+
+        const auto RestoreOriginalLexerState = [&]()
+        {
+            mPosition = elseEndIter;
+            mReadPosition = readIter;
+
+            mCharacterNumber = originalCharacterNumber;
+            memcpy(mCharacterRange, originalRange, 2 * sizeof(CharacterRange));
+            mLineNumber = originalLineNumber;
+            mChar = originalChar;
+        };
+
+        SkipWhiteSpace();
+        // Check to see if next character is letter if so read it as an identifier and check if it's a keyword "if" 
+        if (utility::IsLetter(mChar))
+        {
+            std::string_view identifier{ ReadIdentifier() };
+            TokenType tokenType{ utility::DeriveIdentifierToken(identifier) };
+
+            if (tokenType == TokenType::IF)
+            {
+                // We have found an "else if"
+                mCharacterRange[0] = originalRange[0];
+                return { elseStartIter,mPosition };
+            }
+        }
+
+        // Wasn't "else if"
+        RestoreOriginalLexerState();
+        return {};
     }
 }

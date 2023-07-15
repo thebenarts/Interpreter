@@ -30,12 +30,14 @@ namespace interpreter
         std::string_view ReadIdentifier();
         std::string_view ReadNumber();
 
+        std::string_view CheckElseIf();
+
         void Tokenize();
         CharacterRange* SetCharacterRange(CharacterRange range = 0);
 
         std::string mInput;
-        std::string::iterator mPosition;
-        std::string::iterator mReadPosition;
+        std::string::const_iterator mPosition;
+        std::string::const_iterator mReadPosition;
         char mChar;
         int32_t mLineNumber;
         CharacterRange mCharacterNumber;
