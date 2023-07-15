@@ -34,6 +34,7 @@ namespace interpreter
         RegisterPrefixFunctionPtr(TokenType::MINUS, std::bind(&Parser::ParsePrefixExpression, this));
         RegisterPrefixFunctionPtr(TokenType::LPAREN, std::bind(&Parser::ParseGroupedExpression, this));
         RegisterPrefixFunctionPtr(TokenType::IF, std::bind(&Parser::ParseIfExpression, this));
+        RegisterPrefixFunctionPtr(TokenType::FUNCTION, std::bind(&Parser::ParseFunctionExpression, this));
 
         // Register Infix Function pointers
         {
@@ -145,8 +146,6 @@ namespace interpreter
         VERIFY(GetNextToken())
         {
             AdvanceToken();
-            //auto identifierExpression{ std::make_unique<ast::PrimitiveExpression>() };
-            //identifierExpression->mToken = *GetCurrentToken();
             statement->mIdentifier = std::move(ParsePrimitiveExpression());
         }
 
@@ -392,6 +391,58 @@ namespace interpreter
         }
 
         return expression;
+    }
+
+    ExpressionUniquePtr Parser::ParseFunctionExpression()
+    {
+        auto functionExpression{ std::make_unique<ast::FunctionExpression>() };
+        // The token has been checked in ParseExpression(); no need to check before dereferencing
+        functionExpression->mToken = *GetCurrentToken();    // should be "fn"
+
+        if (!ExpectNextTokenIs(TokenType::LPAREN))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // "fn" -> "("
+        functionExpression->mParameters = std::move(ParseFunctionParameters()); // Should leave with CurrentToken == ")"
+
+        if (ExpectNextTokenIs(TokenType::LBRACE))
+        {
+            return nullptr;
+        }
+        AdvanceToken(); // ")" -> "{"
+        functionExpression->mBody = ParseBlockStatement();
+
+        return functionExpression;
+    }
+
+    std::vector<ExpressionUniquePtr> Parser::ParseFunctionParameters()
+    {
+        if (NextTokenIs(TokenType::RPAREN))
+        {
+            AdvanceToken();
+            return {};
+        }
+
+        std::vector<ExpressionUniquePtr> parameters;
+        AdvanceToken(); // "(" -> start of parameter
+
+        parameters.push_back(std::move(ParsePrimitiveExpression()));
+
+        while (GetNextToken() && NextTokenIs(TokenType::COMMA))
+        {
+            AdvanceToken(); // last character of previous identifier -> ","
+            AdvanceToken(); // "," -> first character of next parameter
+            parameters.push_back(std::move(ParsePrimitiveExpression()));
+        }
+
+        if (!ExpectNextTokenIs(TokenType::RPAREN))
+        {
+            return {};
+        }
+        AdvanceToken(); // Advance to ")"
+
+        return parameters;
     }
 
     ast::Precedence Parser::GetNextPrecedence()
