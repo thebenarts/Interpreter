@@ -56,7 +56,7 @@ namespace interpreter
 
         bool TestPrimitiveExpression(ast::Expression* expression, TokenPrimitive expectedValue)
         {
-            std::visit([&expression](auto&& arg) {
+            std::visit([&expression](const auto& arg) {
                 using ExpectedType = std::decay_t<decltype(arg)>;
 
                 if constexpr (std::is_same_v<std::string, ExpectedType>)
@@ -353,6 +353,9 @@ namespace interpreter
             "((5 < 4) != (3 > 4))\n"
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n"
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n"
+            "((a + add((b * c))) + d)\n"
+            "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))\n"
+            "add((((a + b) + ((c * d) / f)) + g))\n"
         };
 
         REQUIRE(program != nullptr);
@@ -474,7 +477,7 @@ namespace interpreter
         const auto ifBlockStatement{ dynamic_cast<ast::BlockStatement*>(ifBStatement) };
         REQUIRE(ifBlockStatement);
         REQUIRE(ifBlockStatement->mStatements.size() == 1);
-        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get()};
+        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get() };
         REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
         const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
         REQUIRE(consequenceExpressionStatement);
@@ -518,7 +521,7 @@ namespace interpreter
         const auto ifBlockStatement{ dynamic_cast<ast::BlockStatement*>(ifBStatement) };
         REQUIRE(ifBlockStatement);
         REQUIRE(ifBlockStatement->mStatements.size() == 1);
-        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get()};
+        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get() };
         REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
         const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
         REQUIRE(consequenceExpressionStatement);
@@ -526,7 +529,7 @@ namespace interpreter
         test::TestPrimitiveExpression(consequenceExpressionStatement->mValue.get(), "x");
 
         REQUIRE(ifExpression->mAlternative);
-        ast::Statement* alternativeStatement{ ifExpression->mAlternative->mStatements[0].get()};
+        ast::Statement* alternativeStatement{ ifExpression->mAlternative->mStatements[0].get() };
         REQUIRE(alternativeStatement);
         const auto alternativeExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(alternativeStatement) };
         REQUIRE(alternativeExpressionStatement);
@@ -569,7 +572,7 @@ namespace interpreter
         const auto ifBlockStatement{ dynamic_cast<ast::BlockStatement*>(ifBStatement) };
         REQUIRE(ifBlockStatement);
         REQUIRE(ifBlockStatement->mStatements.size() == 1);
-        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get()};
+        ast::Statement* consequenceStatement{ ifBlockStatement->mStatements[0].get() };
         REQUIRE(consequenceStatement->mNodeType == ast::NodeType::ExpressionStatement);
         const auto consequenceExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(consequenceStatement) };
         REQUIRE(consequenceExpressionStatement);
@@ -594,13 +597,12 @@ namespace interpreter
         }
 
         REQUIRE(ifExpression->mAlternative);
-        ast::Statement* alternativeStatement{ ifExpression->mAlternative->mStatements[0].get()};
+        ast::Statement* alternativeStatement{ ifExpression->mAlternative->mStatements[0].get() };
         REQUIRE(alternativeStatement);
         const auto alternativeExpressionStatement{ dynamic_cast<ast::ExpressionStatement*>(alternativeStatement) };
         REQUIRE(alternativeExpressionStatement);
         REQUIRE(alternativeExpressionStatement->mValue);
         test::TestPrimitiveExpression(alternativeExpressionStatement->mValue.get(), "work");
-        std::cout << program->Log();
     }
 
     TEST_CASE("FunctionExpressionTest")
@@ -614,10 +616,10 @@ namespace interpreter
 
         REQUIRE(program);
         REQUIRE(program->mStatements.size() == 1);
-        ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get())};
+        ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get()) };
         REQUIRE(expressionStatement);
 
-        ast::FunctionExpression* functionExpression{ dynamic_cast<ast::FunctionExpression*>(expressionStatement->mValue.get()) };
+        auto functionExpression{ dynamic_cast<ast::FunctionExpression*>(expressionStatement->mValue.get()) };
         REQUIRE(functionExpression);
         REQUIRE(functionExpression->mParameters.size() == 2);
         test::TestPrimitiveExpression(functionExpression->mParameters[0].get(), "x");
@@ -628,5 +630,59 @@ namespace interpreter
         ast::ExpressionStatement* bodyStatement{ dynamic_cast<ast::ExpressionStatement*>(functionExpression->mBody->mStatements[0].get()) };
         ast::Expression* infixExpression{ bodyStatement->mValue.get() };
         test::TestInfixExpression(infixExpression, "x", TokenType::PLUS, "y");
+    }
+
+    TEST_CASE("FunctionParameterTest")
+    {
+        // fn() {};
+        // fn(x) {};
+        // fn(x, y, x) {};
+
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/functionParameterTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+        std::vector<std::vector<std::string>> testData{ {}, { {"x"} }, { "x", "y", "z" } };
+
+        REQUIRE(program);
+        REQUIRE(program->mStatements.size() == 3);
+        for (int i = 0; i != 3; i++)
+        {
+            ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[i].get()) };
+            REQUIRE(expressionStatement);
+
+            auto functionExpression{ dynamic_cast<ast::FunctionExpression*>(expressionStatement->mValue.get()) };
+            REQUIRE(functionExpression);
+            REQUIRE(functionExpression->mParameters.size() == testData[i].size());
+            for (int j = 0; j != testData[i].size(); j++)
+            {
+                test::TestPrimitiveExpression(functionExpression->mParameters[j].get(), testData[i][j]);
+            }
+        }
+
+    }
+
+    TEST_CASE("CallExpressionTest")
+    {
+        // add(1 , 2 * 3, 4 + 5);
+
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/callExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        REQUIRE(program);
+        REQUIRE(program->mStatements.size() == 1);
+        ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get()) };
+        REQUIRE(expressionStatement);
+
+        auto callExpression{ dynamic_cast<ast::CallExpression*>(expressionStatement->mValue.get()) };
+        REQUIRE(callExpression);
+        REQUIRE(callExpression->mFunction);
+        test::TestPrimitiveExpression(callExpression->mFunction.get(), "add");
+        REQUIRE(callExpression->mArguments.size() == 3);
+        test::TestPrimitiveExpression(callExpression->mArguments[0].get(), 1);
+        test::TestInfixExpression(callExpression->mArguments[1].get(), 2, TokenType::ASTERISK, 3);
+        test::TestInfixExpression(callExpression->mArguments[2].get(), 4, TokenType::PLUS, 5);
     }
 }

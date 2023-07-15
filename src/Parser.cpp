@@ -48,6 +48,7 @@ namespace interpreter
             RegisterInfixFunctionPtr(TokenType::NOT_EQ, std::bind(&Parser::ParseInfixExpression, this, _1));
             RegisterInfixFunctionPtr(TokenType::LT, std::bind(&Parser::ParseInfixExpression, this, _1));
             RegisterInfixFunctionPtr(TokenType::GT, std::bind(&Parser::ParseInfixExpression, this, _1));
+            RegisterInfixFunctionPtr(TokenType::LPAREN, std::bind(&Parser::ParseCallExpression, this, _1));
         }
 
     }
@@ -443,6 +444,45 @@ namespace interpreter
         AdvanceToken(); // Advance to ")"
 
         return parameters;
+    }
+
+    ExpressionUniquePtr Parser::ParseCallExpression(ExpressionUniquePtr leftExpression)
+    {
+        auto callExpression{ std::make_unique<ast::CallExpression>() };
+        callExpression->mToken = *GetCurrentToken();
+        callExpression->mFunction = std::move(leftExpression);
+        callExpression->mArguments = ParseCallArguments();
+
+        return callExpression;
+    }
+
+    std::vector<ExpressionUniquePtr> Parser::ParseCallArguments()
+    {
+        if (NextTokenIs(TokenType::RPAREN))
+        {
+            AdvanceToken(); // -> ')'
+            return {};
+        }
+
+        std::vector<ExpressionUniquePtr> arguments;
+        AdvanceToken(); // -> first argument
+
+        arguments.push_back(std::move(ParseExpression(ast::Precedence::LOWEST)));
+
+        while (NextTokenIs(TokenType::COMMA))
+        {
+            AdvanceToken(); // -> ','
+            AdvanceToken(); // -> first part of next argument
+            arguments.push_back(std::move(ParseExpression(ast::Precedence::LOWEST)));
+        }
+
+        if (!ExpectNextTokenIs(TokenType::RPAREN))
+        {
+            return {};
+        }
+        AdvanceToken(); // -> ')'
+
+        return arguments;
     }
 
     ast::Precedence Parser::GetNextPrecedence()

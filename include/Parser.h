@@ -33,11 +33,14 @@ namespace interpreter
         ExpressionUniquePtr ParseExpression(ast::Precedence precedence);
         ExpressionUniquePtr ParsePrimitiveExpression();
         ExpressionUniquePtr ParsePrefixExpression();
-        ExpressionUniquePtr ParseInfixExpression(ExpressionUniquePtr leftExpression);
         ExpressionUniquePtr ParseGroupedExpression();
         ExpressionUniquePtr ParseIfExpression();
         ExpressionUniquePtr ParseFunctionExpression();
         std::vector<ExpressionUniquePtr> ParseFunctionParameters();
+        std::vector<ExpressionUniquePtr> ParseCallArguments();
+
+        ExpressionUniquePtr ParseInfixExpression(ExpressionUniquePtr leftExpression);
+        ExpressionUniquePtr ParseCallExpression(ExpressionUniquePtr leftExpression);
 
 
         // Expression precedence helpers

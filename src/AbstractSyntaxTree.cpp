@@ -243,6 +243,36 @@ namespace interpreter {
             return result.str();
         }
 
+        // ------------------------------------------------------------ Call Expression -----------------------------------------------------
+
+        std::optional<Token> CallExpression::TokenNode() { return mToken; }
+        std::optional<Token> CallExpression::ExpressionNode() { return {}; }
+
+        std::string CallExpression::Log()
+        {
+            std::ostringstream result;
+
+            VERIFY(mFunction)
+            {
+                result << mFunction->Log() << '(';
+            }
+
+            for (int i = 0; i != mArguments.size(); i++)
+            {
+                if (const auto& parameter{ mArguments[i] })
+                {
+                    result << parameter->Log();
+                    if (i != mArguments.size() - 1)
+                    {
+                        result << ", ";
+                    }
+                }
+            }
+            result << ')';
+
+            return result.str();
+        }
+
         // ------------------------------------------------------------ Program -----------------------------------------------------
 
         std::string Program::Log()
