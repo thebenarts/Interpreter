@@ -603,6 +603,7 @@ namespace interpreter
         std::cout << program->Log();
     }
 
+    // Testing revert
     //TEST_CASE("FunctionExpressionTest")
     //{
     //    // fn(x,y) { x + y; }
