@@ -253,10 +253,9 @@ namespace interpreter {
             {
                 if (statement)
                 {
-                    const auto tokenNode{ statement->TokenNode() };
-                    VERIFY(tokenNode)
+                    if (statement)
                     {
-                        result << *tokenNode << std::endl;
+                        result << statement->Log() << std::endl;
                     }
                 }
             }

@@ -406,7 +406,7 @@ namespace interpreter
         AdvanceToken(); // "fn" -> "("
         functionExpression->mParameters = std::move(ParseFunctionParameters()); // Should leave with CurrentToken == ")"
 
-        if (ExpectNextTokenIs(TokenType::LBRACE))
+        if (!ExpectNextTokenIs(TokenType::LBRACE))
         {
             return nullptr;
         }

@@ -603,30 +603,30 @@ namespace interpreter
         std::cout << program->Log();
     }
 
-    //TEST_CASE("FunctionExpressionTest")
-    //{
-    //    // fn(x,y) { x + y; }
+    TEST_CASE("FunctionExpressionTest")
+    {
+        // fn(x,y) { x + y; }
 
-    //    std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/functionExpressionTest.txt") };
-    //    interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
-    //    interpreter::Parser parser{ std::move(lexer) };
-    //    interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/functionExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
 
-    //    REQUIRE(program);
-    //    REQUIRE(program->mStatements.size() == 1);
-    //    ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get())};
-    //    REQUIRE(expressionStatement);
+        REQUIRE(program);
+        REQUIRE(program->mStatements.size() == 1);
+        ast::ExpressionStatement* expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(program->mStatements[0].get())};
+        REQUIRE(expressionStatement);
 
-    //    ast::FunctionExpression* functionExpression{ dynamic_cast<ast::FunctionExpression*>(expressionStatement->mValue.get()) };
-    //    REQUIRE(functionExpression);
-    //    REQUIRE(functionExpression->mParameters.size() == 2);
-    //    test::TestPrimitiveExpression(functionExpression->mParameters[0].get(), "x");
-    //    test::TestPrimitiveExpression(functionExpression->mParameters[1].get(), "y");
+        ast::FunctionExpression* functionExpression{ dynamic_cast<ast::FunctionExpression*>(expressionStatement->mValue.get()) };
+        REQUIRE(functionExpression);
+        REQUIRE(functionExpression->mParameters.size() == 2);
+        test::TestPrimitiveExpression(functionExpression->mParameters[0].get(), "x");
+        test::TestPrimitiveExpression(functionExpression->mParameters[1].get(), "y");
 
-    //    REQUIRE(functionExpression->mBody);
-    //    REQUIRE(functionExpression->mBody->mStatements.size() == 1);
-    //    ast::ExpressionStatement* bodyStatement{ dynamic_cast<ast::ExpressionStatement*>(functionExpression->mBody->mStatements[0].get()) };
-    //    ast::Expression* infixExpression{ bodyStatement->mValue.get() };
-    //    test::TestInfixExpression(infixExpression, "x", TokenType::PLUS, "y");
-    //}
+        REQUIRE(functionExpression->mBody);
+        REQUIRE(functionExpression->mBody->mStatements.size() == 1);
+        ast::ExpressionStatement* bodyStatement{ dynamic_cast<ast::ExpressionStatement*>(functionExpression->mBody->mStatements[0].get()) };
+        ast::Expression* infixExpression{ bodyStatement->mValue.get() };
+        test::TestInfixExpression(infixExpression, "x", TokenType::PLUS, "y");
+    }
 }
