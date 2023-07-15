@@ -6,7 +6,5 @@
 
 int main()
 {
-    int a;
-    std::cout << interpreter::utility::TypeName<interpreter::ast::Expression>();
     return 0;
 }

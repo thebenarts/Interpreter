@@ -206,21 +206,6 @@ namespace interpreter {
             BlockStatementUniquePtr mAlternative;
         };
 
-        struct FunctionExpression : public Expression
-        {
-            FunctionExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::IfExpression; }
-            virtual ~FunctionExpression(){}
-
-            virtual std::optional<Token> TokenNode() override;
-            virtual std::optional<Token> ExpressionNode() override;
-            virtual std::string Log() override;
-
-            // Variables
-            Token mToken;   // fn token
-            std::vector<ExpressionUniquePtr> mParameters;
-            BlockStatementUniquePtr mBody;
-        };
-
         struct Program
         {
             std::vector<StatementUniquePtr> mStatements;

@@ -36,8 +36,6 @@ namespace interpreter
         ExpressionUniquePtr ParseInfixExpression(ExpressionUniquePtr leftExpression);
         ExpressionUniquePtr ParseGroupedExpression();
         ExpressionUniquePtr ParseIfExpression();
-        ExpressionUniquePtr ParseFunctionExpression();
-        std::vector<ExpressionUniquePtr> ParseFunctionParameters();
 
 
         // Expression precedence helpers
