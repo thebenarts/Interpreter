@@ -275,6 +275,11 @@ namespace interpreter {
 
         // ------------------------------------------------------------ Program -----------------------------------------------------
 
+        std::optional<Token> Program::TokenNode()
+        {
+            return {};
+        }
+
         std::string Program::Log()
         {
             std::ostringstream result;

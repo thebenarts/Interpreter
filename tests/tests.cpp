@@ -685,4 +685,36 @@ namespace interpreter
         test::TestInfixExpression(callExpression->mArguments[1].get(), 2, TokenType::ASTERISK, 3);
         test::TestInfixExpression(callExpression->mArguments[2].get(), 4, TokenType::PLUS, 5);
     }
+
+    TEST_CASE("LetStatementTest")
+    {
+        // let x = 5;   x = 5
+        // let y = true; y = true
+        // let foobar = y; foobar = y
+
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/letStatementTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        REQUIRE(program->mStatements.size() == 3);
+        std::vector<std::string> identifiers{ "x", "y", "foobar" };
+        std::vector<TokenPrimitive> values{ 5, true, "y" };
+
+        for (int i = 0; i != 3; i++)
+        {
+            ast::Statement* statement { program->mStatements[i].get() };
+            auto letStatement{ dynamic_cast<ast::LetStatement*>(statement) };
+            REQUIRE(letStatement);
+            
+            REQUIRE(letStatement->mToken.mType == TokenType::LET);
+
+            REQUIRE(letStatement->mIdentifier);
+            test::TestPrimitiveExpression(letStatement->mIdentifier.get(), identifiers[i]);
+
+            REQUIRE(letStatement->mValue);
+            test::TestPrimitiveExpression(letStatement->mValue.get(), values[i]);
+        }
+    }
+
 }

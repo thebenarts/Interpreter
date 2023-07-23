@@ -239,11 +239,16 @@ namespace interpreter {
             std::vector<ExpressionUniquePtr> mArguments;
         };
 
-        struct Program
+        struct Program final : public Node
         {
-            std::vector<StatementUniquePtr> mStatements;
+            Program() { mNodeType = NodeType::Program; }
+            virtual ~Program() {};
 
-            std::string Log();
+            std::optional<Token> TokenNode() override;
+            std::string Log() override;
+
+            // Variables
+            std::vector<StatementUniquePtr> mStatements;
         };
     }
 }

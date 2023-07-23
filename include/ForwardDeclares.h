@@ -8,6 +8,7 @@ namespace interpreter
     class Lexer;
     class Parser;
     class Token;
+    class Message;
 
     namespace ast
     {
@@ -46,4 +47,6 @@ namespace interpreter
     typedef std::unique_ptr<Parser> ParserUniquePtr;
 
     typedef std::shared_ptr<Token> TokenSharedPtr;
+
+    typedef std::shared_ptr<Message> MessageSharedPtr;
 }

@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "Logger.h"
 #include <format>
 
 namespace interpreter
@@ -28,7 +29,7 @@ namespace interpreter
         // Register Prefix Function pointers
         RegisterPrefixFunctionPtr(TokenType::TRUE, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::FALSE, std::bind(&Parser::ParsePrimitiveExpression, this));
-        RegisterPrefixFunctionPtr(TokenType::IDENT, std::bind(&Parser::ParsePrimitiveExpression,this));
+        RegisterPrefixFunctionPtr(TokenType::IDENT, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::INT, std::bind(&Parser::ParsePrimitiveExpression, this));
         RegisterPrefixFunctionPtr(TokenType::BANG, std::bind(&Parser::ParsePrefixExpression, this));
         RegisterPrefixFunctionPtr(TokenType::MINUS, std::bind(&Parser::ParsePrefixExpression, this));
@@ -98,7 +99,7 @@ namespace interpreter
 
     ProgramUniquePtr Parser::ParseProgram()
     {
-        auto program{ std::make_unique<ast::Program>()};
+        auto program{ std::make_unique<ast::Program>() };
         while (GetCurrentToken() && !CurrentTokenIs(TokenType::ENDF))
         {
             StatementUniquePtr statement{ ParseStatement() };
@@ -119,7 +120,7 @@ namespace interpreter
         {
             switch (token->mType)
             {
-            case TokenType::LET :
+            case TokenType::LET:
                 return ParseLetStatement();
                 break;
             case TokenType::RETURN:
@@ -137,7 +138,7 @@ namespace interpreter
     {
         auto statement{ std::make_unique<ast::LetStatement>() };
         // We only land here after checking the CurrentToken in ParseStatement so it is safe to dereference without checking here 
-        statement->mToken = *GetCurrentToken();
+        statement->mToken = *GetCurrentToken(); // "let" token
 
         if (!ExpectNextTokenIs(TokenType::IDENT))
         {
@@ -147,7 +148,7 @@ namespace interpreter
         VERIFY(GetNextToken())
         {
             AdvanceToken();
-            statement->mIdentifier = std::move(ParsePrimitiveExpression());
+            statement->mIdentifier = std::move(ParsePrimitiveExpression()); // Identifier
         }
 
         if (!ExpectNextTokenIs(TokenType::ASSIGN))
@@ -171,12 +172,14 @@ namespace interpreter
     {
         auto statement{ std::make_unique<ast::ReturnStatement>() };
         // We only land here after checking the CurrentToken in ParseStatement so it is safe to dereference without checking here 
-        statement->mToken = *GetCurrentToken();
+        statement->mToken = *GetCurrentToken(); // "return" token
 
         // TODO: implement logic here to handle expressions
-        AdvanceToken();
+        AdvanceToken(); // advance to the first token of the Expression
 
-        while (GetCurrentToken() && !CurrentTokenIs(TokenType::SEMICOLON))
+        statement->mValue = ParseExpression(ast::Precedence::LOWEST);
+
+        if (NextTokenIs(TokenType::SEMICOLON))
         {
             AdvanceToken();
         }
@@ -254,11 +257,14 @@ namespace interpreter
         {
             ExpressionUniquePtr expression;
 
-            IF_LOG(mPrefixFunctionPtrMap.contains(token->mType),
-                std::format("type: {} doesn't have a function associtated with it.", utility::ConvertTokenTypeToString(token->mType)))
+            if (mPrefixFunctionPtrMap.contains(token->mType))
             {
                 PrefixParseFunctionPtr prefixFunctionPtr{ mPrefixFunctionPtrMap.at(token->mType) };
                 expression = prefixFunctionPtr();
+            }
+            else
+            {
+                LOG_MESSAGE(MessageType::ERRORS, std::format("type: {} doesn't have a function associtated with it.", utility::ConvertTokenTypeToString(token->mType)));
             }
 
             // Added the safe check of GetNextToken() to safeguard the NextTokenIs(), technically speaking we wouldn't need either but it's more readable this way.
@@ -270,7 +276,7 @@ namespace interpreter
                     return expression;
                 }
 
-                const auto infixExpressionFunctionIterator { mInfixFunctionPtrMap.find(nextToken->mType) };
+                const auto infixExpressionFunctionIterator{ mInfixFunctionPtrMap.find(nextToken->mType) };
                 if (infixExpressionFunctionIterator == mInfixFunctionPtrMap.end())
                 {
                     return expression;
@@ -300,7 +306,7 @@ namespace interpreter
         case TokenType::INT:
             expression->mExpressionType = ast::ExpressionType::IntegerExpression;
             break;
-        case TokenType::TRUE:[[fall_through]]
+        case TokenType::TRUE: [[fall_through]]
         case TokenType::FALSE:
             expression->mExpressionType = ast::ExpressionType::BooleanExpression;
             break;
@@ -529,7 +535,7 @@ namespace interpreter
 
     bool Parser::CurrentTokenIs(TokenType tokenType)
     {
-        if (const Token* currentToken{ GetCurrentToken() })
+        if (const Token * currentToken{ GetCurrentToken() })
         {
             return TokenIs(*currentToken, tokenType);
         }
@@ -544,16 +550,19 @@ namespace interpreter
 
     bool Parser::ExpectNextTokenIs(TokenType expectedType)
     {
-        if (const Token* peekToken{ GetNextToken() })
+        if (const Token * peekToken{ GetNextToken() })
         {
             if (TokenIs(*peekToken, expectedType))
             {
                 return true;
             }
 
-            std::cout << "ERROR: on line "<< peekToken->mLineNumber << " character range ("<<peekToken->mCharacterRange[0]<<" , " << peekToken->mCharacterRange[1]<< "); "
-                << " expected next token to be " << utility::ConvertTokenTypeToString(expectedType) <<
-                " actual type: " << utility::ConvertTokenTypeToString(peekToken->mType) << '\n';
+            //std::cout << "ERROR: on line "<< peekToken->mLineNumber << " character range ("<<peekToken->mCharacterRange[0]<<" , " << peekToken->mCharacterRange[1]<< "); "
+            //    << " expected next token to be " << utility::ConvertTokenTypeToString(expectedType) <<
+            //    " actual type: " << utility::ConvertTokenTypeToString(peekToken->mType) << '\n';
+
+            Logger::Log(MessageType::ERRORS, std::format("ERROR: line -> {} character range -> ({},{}) expected next token to be -> {} , actual type -> {}",
+                peekToken->mLineNumber, peekToken->mCharacterRange[0], peekToken->mCharacterRange[1], utility::ConvertTokenTypeToString(expectedType), utility::ConvertTokenTypeToString(peekToken->mType)));
         }
 
         return false;
