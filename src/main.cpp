@@ -11,7 +11,9 @@
 int main()
 {
     std::string input;
-    if(std::getline(std::cin,input))
+    interpreter::Logger::SetLoggerSeverity(interpreter::MessageType::WARNING);
+
+    while(std::getline(std::cin,input))
     {
         interpreter::LexerUniquePtr lexer{ std::make_unique<interpreter::Lexer>(input) };
         interpreter::Parser parser{ std::move(lexer) };
@@ -19,6 +21,5 @@ int main()
         interpreter::LOG_MESSAGE(program.get());
     }
 
-    std::ofstream o{ "HelloWorld.txt" };
     return 0;
 }

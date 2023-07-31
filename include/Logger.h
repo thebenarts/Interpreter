@@ -5,8 +5,9 @@
 
 namespace interpreter
 {
-    enum class MessageType
+    enum MessageType : uint8_t
     {
+        UNDEFINED,
         MESSAGE,
         WARNING,
         ERRORS,
@@ -28,9 +29,12 @@ namespace interpreter
 
         static Logger& CommandLineLogger();
         static Logger& FileLogger();
+        static const MessageType& SetLoggerSeverity(MessageType severity);
+        static const MessageType& GetLoggerSeverity();
 
         static void Log(MessageType type, const std::string& message);
 
+    private:
         enum class LoggerType
         {
             CMD,

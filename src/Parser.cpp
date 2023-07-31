@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "Logger.h"
+#include "Objects.h"
 #include <format>
 
 namespace interpreter
@@ -320,6 +321,7 @@ namespace interpreter
         expression->mExpressionType = ast::ExpressionType::PrefixExpression;
         // Pointer check done in ParseExpression
         expression->mToken = *GetCurrentToken();
+        expression->mOperator = *GetCurrentToken();
 
         AdvanceToken();
         expression->mRightSideValue = ParseExpression(ast::PREFIX);
@@ -491,6 +493,136 @@ namespace interpreter
         return arguments;
     }
 
+    ObjectSharedPtr Parser::Evaluate(ast::Node* node)
+    {
+        // Helper for PrimitiveExpressions
+        const auto GetAndValidateTokenPrimtive = [](ast::Expression* node) -> TokenPrimitive {
+            const auto optionalToken{ node->TokenNode() };
+            assert(optionalToken);
+            return optionalToken->mLiteral;
+        };
+
+        switch (node->mNodeType)
+        {
+        case ast::NodeType::ExpressionStatement:
+            // TODOBB: these could be changed to static casts as we hold metadata, but keeping them dynamic for a bit to make sure everything works
+            if (const auto expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(node) })
+            {
+                return Evaluate(expressionStatement->mValue.get());
+            }
+            else
+            {
+                assert(false);
+            }
+            break;
+        case ast::NodeType::Expression:
+            if (const auto expression{ dynamic_cast<ast::Expression*>(node) })
+            {
+                if (expression->mExpressionType == ast::ExpressionType::IntegerExpression)
+                {
+                    const auto primitive{ GetAndValidateTokenPrimtive(expression) };
+                    return std::make_shared<IntegerType>(std::get<UnsignedNumber>(primitive));
+                }
+                else if (expression->mExpressionType == ast::ExpressionType::BooleanExpression)
+                {
+                    const auto primitive{ GetAndValidateTokenPrimtive(expression) };
+                    return GetNativeBoolObject(std::get<bool>(primitive));
+                }
+                else if (expression->mExpressionType == ast::ExpressionType::PrefixExpression)
+                {
+                    const auto prefixExpression{ dynamic_cast<ast::PrefixExpression*>(expression) };
+                    const auto right{ Evaluate(prefixExpression->mRightSideValue.get()) };
+                    return EvaluatePrefixExpression(prefixExpression->mOperator, right);
+                }
+            }
+            break;
+        default:
+            break;
+        }
+
+        return nullptr;
+    }
+
+    ObjectSharedPtr Parser::EvaluatePrefixExpression(Token operatorToken, ObjectSharedPtr right)
+    {
+        switch (operatorToken.mType)
+        {
+        case TokenType::BANG:   // "!"
+            return EvaluatePrefixBangOperatorExpression(right);
+            break;
+        case TokenType::MINUS:  // "-"
+            return EvaluatePrefixMinusOperatorExpression(right);
+            break;
+        default:
+            return GetNativeNullObject();
+        }
+        return GetNativeNullObject();
+    }
+
+    ObjectSharedPtr Parser::EvaluatePrefixBangOperatorExpression(ObjectSharedPtr right)
+    {
+        // TODOBB: swap dynamic_cast to static_cast once it's confirmed to work.
+        if (right->Type() == "bool")
+        {
+            const auto boolObject{ dynamic_cast<BoolType*>(right.get()) };
+            if (boolObject->mValue)
+            {
+                return GetNativeBoolObject(false);
+            }
+
+            return GetNativeBoolObject(true);
+        }
+        else if (right->Type() == "int")
+        {
+            const auto intObject{ dynamic_cast<IntegerType*>(right.get()) };
+            if (intObject->mValue == 0)
+            {
+                return GetNativeBoolObject(true);
+            }
+
+            return GetNativeBoolObject(false);
+        }
+        else if (right->Type() == "NULL")
+        {
+            return GetNativeBoolObject(true);
+        }
+
+        return GetNativeBoolObject(false);
+    }
+
+    ObjectSharedPtr Parser::EvaluatePrefixMinusOperatorExpression(ObjectSharedPtr right)
+    {
+        const auto intObject{ dynamic_cast<IntegerType*>(right.get()) };
+        VERIFY(intObject)
+        {
+            intObject->mValue = ~intObject->mValue;
+            intObject->mValue += 1;
+            return right;
+        }
+
+        return GetNativeNullObject();
+    }
+
+    ObjectSharedPtr Parser::GetNativeBoolObject(bool value)
+    {
+        static std::shared_ptr<BoolType> nativeTrue{ std::make_shared<BoolType>(true) };
+        static std::shared_ptr<BoolType> nativeFalse{ std::make_shared<BoolType>(false) };
+
+        if (value)
+        {
+            return nativeTrue;
+        }
+
+        return nativeFalse;
+    }
+
+    ObjectSharedPtr Parser::GetNativeNullObject()
+    {
+        static std::shared_ptr<NullType> nativeNull{ std::make_shared<NullType>() };
+
+        return nativeNull;
+    }
+
     ast::Precedence Parser::GetNextPrecedence()
     {
         auto token{ GetNextToken() };
@@ -556,10 +688,6 @@ namespace interpreter
             {
                 return true;
             }
-
-            //std::cout << "ERROR: on line "<< peekToken->mLineNumber << " character range ("<<peekToken->mCharacterRange[0]<<" , " << peekToken->mCharacterRange[1]<< "); "
-            //    << " expected next token to be " << utility::ConvertTokenTypeToString(expectedType) <<
-            //    " actual type: " << utility::ConvertTokenTypeToString(peekToken->mType) << '\n';
 
             Logger::Log(MessageType::ERRORS, std::format("ERROR: line -> {} character range -> ({},{}) expected next token to be -> {} , actual type -> {}",
                 peekToken->mLineNumber, peekToken->mCharacterRange[0], peekToken->mCharacterRange[1], utility::ConvertTokenTypeToString(expectedType), utility::ConvertTokenTypeToString(peekToken->mType)));

@@ -19,6 +19,8 @@ namespace interpreter
 
         ProgramUniquePtr ParseProgram();
 
+        // Evaluate
+        static ObjectSharedPtr Evaluate(ast::Node* node);
     private:
         void RegisterParseFunctionPointers();
 
@@ -42,11 +44,17 @@ namespace interpreter
         ExpressionUniquePtr ParseInfixExpression(ExpressionUniquePtr leftExpression);
         ExpressionUniquePtr ParseCallExpression(ExpressionUniquePtr leftExpression);
 
-
         // Expression precedence helpers
         ast::Precedence GetNextPrecedence();
         ast::Precedence GetCurrentPrecedence();
         ast::Precedence GetPrecedence(const Token& token);
+
+        // Evaluate
+        static ObjectSharedPtr GetNativeBoolObject(bool value);
+        static ObjectSharedPtr GetNativeNullObject();
+        static ObjectSharedPtr EvaluatePrefixExpression(Token operatorToken, ObjectSharedPtr right);
+        static ObjectSharedPtr EvaluatePrefixBangOperatorExpression(ObjectSharedPtr right);
+        static ObjectSharedPtr EvaluatePrefixMinusOperatorExpression(ObjectSharedPtr right);
 
         // Lexer utilities
         void AdvanceToken();

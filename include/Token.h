@@ -58,7 +58,10 @@ namespace interpreter
         TokenPrimitive mLiteral;
         int32_t mLineNumber;
         CharacterRange mCharacterRange[2];
+
+        static std::string ToString(TokenPrimitive);
     };
+
     std::ostream& operator<<(std::ostream& out, const Token& token);
 
     const std::unordered_map<std::string, TokenType> sKeywordsMap

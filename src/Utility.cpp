@@ -1,5 +1,6 @@
 #include "Utility.h"
 #include <iostream>
+#include <sstream>
 
 namespace interpreter
 {
@@ -68,8 +69,8 @@ namespace interpreter
             }
             else
             {
-                const auto leftValue{ std::get<Number>(left.mLiteral) };
-                const auto rightValue{ std::get<Number>(right.mLiteral) };
+                const auto leftValue{ std::get<UnsignedNumber>(left.mLiteral) };
+                const auto rightValue{ std::get<UnsignedNumber>(right.mLiteral) };
                 VERIFY(leftValue == rightValue) {}
                 else
                 {
@@ -112,7 +113,7 @@ namespace interpreter
         void AssignToToken(Token& token, TokenType tokenType, Number literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
-            token.mLiteral.emplace<Number>(literal);
+            token.mLiteral.emplace<UnsignedNumber>(literal);
             memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 
@@ -132,6 +133,17 @@ namespace interpreter
             }
 
             return TokenType::IDENT;
+        }
+
+        std::string DeriveType(TokenPrimitive primitive)
+        {
+            std::ostringstream out;
+            std::visit([&out](auto& arg)
+                {
+                   out << TypeName<std::decay_t<decltype(arg)>>();
+                }, primitive);
+
+            return out.str();
         }
 
         std::string ReadTextFile(std::string_view fileName)

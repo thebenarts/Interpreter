@@ -1,6 +1,7 @@
 #include "Utility.h"
 #include "Parser.h"
 #include "AbstractSyntaxTree.h"
+#include "Objects.h"
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
@@ -33,13 +34,13 @@ namespace interpreter
             return true;
         }
 
-        bool TestInteger(ast::Expression* expression, Number expectedValue)
+        bool TestInteger(ast::Expression* expression, UnsignedNumber expectedValue)
         {
             REQUIRE(expression->mExpressionType == ast::ExpressionType::IntegerExpression);
             const auto integerToken{ expression->TokenNode() };
             REQUIRE(integerToken);
-            REQUIRE(std::holds_alternative<Number>(integerToken->mLiteral));
-            const auto number{ std::get<Number>(integerToken->mLiteral) };
+            REQUIRE(std::holds_alternative<UnsignedNumber>(integerToken->mLiteral));
+            const auto number{ std::get<UnsignedNumber>(integerToken->mLiteral) };
             REQUIRE(number == expectedValue);
             return true;
         }
@@ -63,13 +64,20 @@ namespace interpreter
                 {
                     return TestIdentifier(expression, arg);
                 }
-                else if constexpr (std::is_same_v<Number, ExpectedType>)
+                else if constexpr (std::is_same_v<UnsignedNumber, ExpectedType>)
                 {
                     return TestInteger(expression, arg);
                 }
                 else if constexpr (std::is_same_v<bool, ExpectedType>)
                 {
                     return TestBoolean(expression, arg);
+                }
+                else if constexpr (std::is_same_v<std::monostate, ExpectedType>)
+                {
+                    //TODOBB: think of a way to handle this.
+                    // monostate could represent null ??
+                    REQUIRE(false);
+                    return false;
                 }
                 else
                 {
@@ -111,12 +119,12 @@ namespace interpreter
             {TokenType::LET, "let"},
             {TokenType::IDENT, "five"},
             {TokenType::ASSIGN, "="},
-            {TokenType::INT, 5},
+            {TokenType::INT, UnsignedNumber(5)},
             {TokenType::SEMICOLON, ";"},
             {TokenType::LET, "let"},
             {TokenType::IDENT, "ten"},
             {TokenType::ASSIGN, "="},
-            {TokenType::INT, 10},
+            {TokenType::INT, UnsignedNumber(10)},
             {TokenType::SEMICOLON, ";"},
             {TokenType::LET, "let"},
             {TokenType::IDENT, "add"},
@@ -148,19 +156,19 @@ namespace interpreter
             {TokenType::MINUS, "-"},
             {TokenType::SLASH, "/"},
             {TokenType::ASTERISK, "*"},
-            {TokenType::INT, 5},
+            {TokenType::INT, UnsignedNumber(5)},
             {TokenType::SEMICOLON, ";"},
-            {TokenType::INT, 5},
+            {TokenType::INT, UnsignedNumber(5)},
             {TokenType::LT, "<"},
-            {TokenType::INT, 10},
+            {TokenType::INT, UnsignedNumber(10)},
             {TokenType::GT, ">"},
-            {TokenType::INT, 5},
+            {TokenType::INT, UnsignedNumber(5)},
             {TokenType::SEMICOLON, ";"},
             {TokenType::IF, "if"},
             {TokenType::LPAREN, "("},
-            {TokenType::INT, 5},
+            {TokenType::INT, UnsignedNumber(5)},
             {TokenType::LT, "<"},
-            {TokenType::INT, 10},
+            {TokenType::INT, UnsignedNumber(10)},
             {TokenType::RPAREN, ")"},
             {TokenType::LBRACE, "{"},
             {TokenType::RETURN, "return"},
@@ -173,13 +181,13 @@ namespace interpreter
             {TokenType::FALSE, false},
             {TokenType::SEMICOLON, ";"},
             {TokenType::RBRACE, "}"},
-            {TokenType::INT, 10},
+            {TokenType::INT, UnsignedNumber(10)},
             {TokenType::EQ, "=="},
-            {TokenType::INT, 10},
+            {TokenType::INT, UnsignedNumber(10)},
             {TokenType::SEMICOLON, ";"},
-            {TokenType::INT, 10},
+            {TokenType::INT, UnsignedNumber(10)},
             {TokenType::NOT_EQ, "!="},
-            {TokenType::INT, 9},
+            {TokenType::INT, UnsignedNumber(9)},
             {TokenType::SEMICOLON, ";"},
             {TokenType::ENDF, ""}
         };
@@ -199,9 +207,9 @@ namespace interpreter
             {
                 REQUIRE(std::get<std::string>(expected[i].mLiteral) == std::get<std::string>(results[i].mLiteral));
             }
-            else if (std::holds_alternative<Number>(results[i].mLiteral))
+            else if (std::holds_alternative<UnsignedNumber>(results[i].mLiteral))
             {
-                REQUIRE(std::get<Number>(expected[i].mLiteral) == std::get<Number>(results[i].mLiteral));
+                REQUIRE(std::get<UnsignedNumber>(expected[i].mLiteral) == std::get<UnsignedNumber>(results[i].mLiteral));
             }
             else
             {
@@ -288,14 +296,14 @@ namespace interpreter
         auto token{ program->mStatements[0]->TokenNode() };
         REQUIRE(token);
         REQUIRE(token->mType == TokenType::INT);
-        REQUIRE(std::holds_alternative<Number>(token->mLiteral) == true);
-        REQUIRE(std::get<Number>(token->mLiteral) == 5);
+        REQUIRE(std::holds_alternative<UnsignedNumber>(token->mLiteral) == true);
+        REQUIRE(std::get<UnsignedNumber>(token->mLiteral) == 5);
 
         auto expressionToken{ expressionStatement->mValue->TokenNode() };
         REQUIRE(expressionToken);
         REQUIRE(expressionToken->mType == TokenType::INT);
-        REQUIRE(std::holds_alternative<Number>(expressionToken->mLiteral) == true);
-        REQUIRE(std::get<Number>(expressionToken->mLiteral) == 5);
+        REQUIRE(std::holds_alternative<UnsignedNumber>(expressionToken->mLiteral) == true);
+        REQUIRE(std::get<UnsignedNumber>(expressionToken->mLiteral) == 5);
     }
 
     TEST_CASE("PrefixOperatorExpressionTests")
@@ -307,8 +315,8 @@ namespace interpreter
 
         std::vector<std::vector<Token>> prefixTests
         {
-            {{TokenType::BANG,"!"},{TokenType::INT, 5}},
-            {{TokenType::MINUS, "-"},{TokenType::INT, 15}}
+            {{TokenType::BANG,"!"},{TokenType::INT, UnsignedNumber(5)}},
+            {{TokenType::MINUS, "-"},{TokenType::INT, UnsignedNumber(15)}}
         };
 
         REQUIRE(program != nullptr);
@@ -401,7 +409,7 @@ namespace interpreter
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
 
-        std::vector<test::InfixExpressionData> expected{ {true,TokenType::EQ,true},{5,TokenType::NOT_EQ,3},{"you", TokenType::NOT_EQ, "me"} };
+        std::vector<test::InfixExpressionData> expected{ {true,TokenType::EQ,true},{UnsignedNumber(5),TokenType::NOT_EQ,UnsignedNumber(3)},{"you", TokenType::NOT_EQ, "me"} };
 
         for (int i = 0; i != 3; i++)
         {
@@ -579,7 +587,7 @@ namespace interpreter
         REQUIRE(consequenceExpressionStatement->mValue);
         test::TestPrimitiveExpression(consequenceExpressionStatement->mValue.get(), "work");
 
-        std::vector<test::InfixExpressionData> testData{ {5, TokenType::LT, 4}, {4, TokenType::NOT_EQ, 5} };
+        std::vector<test::InfixExpressionData> testData{ {UnsignedNumber(5), TokenType::LT, UnsignedNumber(4)}, {UnsignedNumber(4), TokenType::NOT_EQ, UnsignedNumber(5)} };
         REQUIRE(!ifExpression->mElseIfBlocks.empty());
         for (int i = 0; i != 2; i++)
         {
@@ -681,9 +689,9 @@ namespace interpreter
         REQUIRE(callExpression->mFunction);
         test::TestPrimitiveExpression(callExpression->mFunction.get(), "add");
         REQUIRE(callExpression->mArguments.size() == 3);
-        test::TestPrimitiveExpression(callExpression->mArguments[0].get(), 1);
-        test::TestInfixExpression(callExpression->mArguments[1].get(), 2, TokenType::ASTERISK, 3);
-        test::TestInfixExpression(callExpression->mArguments[2].get(), 4, TokenType::PLUS, 5);
+        test::TestPrimitiveExpression(callExpression->mArguments[0].get(), UnsignedNumber(1));
+        test::TestInfixExpression(callExpression->mArguments[1].get(), UnsignedNumber(2), TokenType::ASTERISK, UnsignedNumber(3));
+        test::TestInfixExpression(callExpression->mArguments[2].get(), UnsignedNumber(4), TokenType::PLUS, UnsignedNumber(5));
     }
 
     TEST_CASE("LetStatementTest")
@@ -699,14 +707,14 @@ namespace interpreter
 
         REQUIRE(program->mStatements.size() == 3);
         std::vector<std::string> identifiers{ "x", "y", "foobar" };
-        std::vector<TokenPrimitive> values{ 5, true, "y" };
+        std::vector<TokenPrimitive> values{ UnsignedNumber(5), true, "y" };
 
         for (int i = 0; i != 3; i++)
         {
-            ast::Statement* statement { program->mStatements[i].get() };
+            ast::Statement* statement{ program->mStatements[i].get() };
             auto letStatement{ dynamic_cast<ast::LetStatement*>(statement) };
             REQUIRE(letStatement);
-            
+
             REQUIRE(letStatement->mToken.mType == TokenType::LET);
 
             REQUIRE(letStatement->mIdentifier);
@@ -714,6 +722,108 @@ namespace interpreter
 
             REQUIRE(letStatement->mValue);
             test::TestPrimitiveExpression(letStatement->mValue.get(), values[i]);
+        }
+    }
+
+    bool TestIntegerObject(ObjectSharedPtr object, Number expectedValue)
+    {
+        const auto objectRawPtr{ object.get() };
+        const auto integerPtr{ dynamic_cast<IntegerType*>(objectRawPtr) };
+        REQUIRE(integerPtr);
+        REQUIRE(integerPtr->mValue == expectedValue);
+        return true;
+    }
+
+    TEST_CASE("EvalIntegerExpressionTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/evalIntegerExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
+        {
+            return Parser::Evaluate(statement);
+        };
+
+        std::vector<int> expectedVal{ 5,101 };
+        for (int i = 0; i != 2; i++)
+        {
+            const auto& statement{ program->mStatements[i] };
+            const auto val{ testEval(statement.get()) };
+            TestIntegerObject(val, expectedVal[i]);
+        }
+    }
+
+    bool TestBoolObject(ObjectSharedPtr object, bool expectedValue)
+    {
+        const auto objectRawPtr{ object.get() };
+        const auto boolPtr{ dynamic_cast<BoolType*>(objectRawPtr) };
+        REQUIRE(boolPtr);
+        REQUIRE(boolPtr->mValue == expectedValue);
+        return true;
+    }
+
+    TEST_CASE("EvalBoolExpressionTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/evalBoolExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
+        {
+            return Parser::Evaluate(statement);
+        };
+
+        std::vector<bool> expectedVal{ false, true };
+        for (int i = 0; i != 2; i++)
+        {
+            const auto& statement{ program->mStatements[i] };
+            const auto val{ testEval(statement.get()) };
+            TestBoolObject(val, expectedVal[i]);
+        }
+    }
+
+    TEST_CASE("EvalPrefixMinusExpressionTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/evalMinusPrefixExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
+        {
+            return Parser::Evaluate(statement);
+        };
+
+        std::vector<Number> expectedVal{ 5,10,-5,-10 , 9223372036854775807, -9223372036854775807};
+        for (int i = 0; i != expectedVal.size(); i++)
+        {
+            const auto& statement{ program->mStatements[i] };
+            const auto val{ testEval(statement.get()) };
+            TestIntegerObject(val, expectedVal[i]);
+        }
+    }
+
+    TEST_CASE("EvalPrefixBangExpressionTest")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/evalBangPrefixExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
+        {
+            return Parser::Evaluate(statement);
+        };
+
+        std::vector<bool> expectedVal{ true, false, false, true, false, true, false, false, true };
+        for (int i = 0; i != expectedVal.size(); i++)
+        {
+            const auto& statement{ program->mStatements[i] };
+            const auto val{ testEval(statement.get()) };
+            TestBoolObject(val, expectedVal[i]);
         }
     }
 

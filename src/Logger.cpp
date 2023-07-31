@@ -25,9 +25,17 @@ namespace interpreter
 
         if (mLoggerType == LoggerType::FILE)
         {
-            if (CreateDirectoryA("../output", nullptr) || ERROR_ALREADY_EXISTS == GetLastError())
+            int count{};
+            for (const auto& msg : mData)
             {
-                std::ofstream out{ std::format("../output/Interpreter-{}.txt", getTime())};
+                if (msg.type >= GetLoggerSeverity())
+                {
+                    count++;
+                }
+            }
+            if (count && (CreateDirectoryA("../output", nullptr) || ERROR_ALREADY_EXISTS == GetLastError()))
+            {
+                std::ofstream out{ std::format("../output/Interpreter-{}.txt", getTime()) };
                 if (!out)
                 {
                     std::cout << "Error: creating file\n";
@@ -35,7 +43,10 @@ namespace interpreter
 
                 for (auto& msg : mData)
                 {
-                    out << msg.message << '\n';
+                    if (msg.type >= GetLoggerSeverity())
+                    {
+                        out << msg.message << '\n';
+                    }
                 }
             }
         }
@@ -61,6 +72,21 @@ namespace interpreter
         FileLogger().mData.emplace_back(type, message);
     }
 
+    const MessageType& Logger::SetLoggerSeverity(MessageType severity)
+    {
+        static MessageType sSeverity{ UNDEFINED };
+        if (severity != UNDEFINED)
+        {
+            sSeverity = severity;
+        }
+        return sSeverity;
+    }
+
+    const MessageType& Logger::GetLoggerSeverity()
+    {
+        return SetLoggerSeverity(MessageType::UNDEFINED);
+    }
+
     void LOG_MESSAGE(ast::Node* node, MessageType type /*= MessageType::MESSAGE*/)
     {
         Logger::Log(type, node->Log());
@@ -75,4 +101,5 @@ namespace interpreter
     {
         Logger::Log(type, message);
     }
+
 }

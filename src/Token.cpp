@@ -1,5 +1,6 @@
 #include "Token.h"
 #include <sstream>
+#include <assert.h>
 
 namespace interpreter
 {
@@ -11,7 +12,7 @@ namespace interpreter
         }
         else if (sNumberTokens.contains(token.mType))
         {
-            out << std::get<Number>(token.mLiteral);
+            out << std::get<UnsignedNumber>(token.mLiteral);
         }
         else if (sBooleanTokens.contains(token.mType))
         {
@@ -27,5 +28,43 @@ namespace interpreter
         }
 
         return out;
+    }
+
+    std::string Token::ToString(TokenPrimitive primitive)
+    {
+        std::ostringstream out;
+        std::visit([&out](const auto& arg)
+            {
+                using Type = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<std::monostate, Type>)
+                {
+                    out << "NULL";
+                }
+                else if constexpr (std::is_same_v<std::string, Type>)
+                {
+                    out << arg;
+                }
+                else if constexpr (std::is_same_v<UnsignedNumber, Type>)
+                {
+                    out << arg;
+                }
+                else if constexpr (std::is_same_v<bool, Type>)
+                {
+                    if (arg)
+                    {
+                        out << "true";
+                    }
+                    else
+                    {
+                        out << "false";
+                    }
+                }
+                else
+                {
+                    assert(false);
+                }
+            }, primitive);
+
+        return out.str();
     }
 }

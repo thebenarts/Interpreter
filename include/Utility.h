@@ -41,6 +41,8 @@ namespace interpreter
         TokenType DeriveIdentifierToken(std::string_view literal);
         std::string ReadTextFile(std::string_view fileName);
 
+        std::string DeriveType(TokenPrimitive primitive);
+
         template <typename T>
         std::string TypeName()
         {
@@ -95,5 +97,11 @@ namespace interpreter
 
             return std::unique_ptr<Derived, Del>(derived, std::move(pointer.get_deleter()));
         };
+
+        template<typename T, typename U>
+        constexpr T narrow_cast(U&& u) noexcept
+        {
+            return static_cast<T>(std::forward<U>(u));
+        }
     }
 }
