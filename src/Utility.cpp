@@ -32,6 +32,40 @@ namespace interpreter
             return number;
         }
 
+        bool ValidateStringNumber(std::string_view literal)
+        {
+            // 9223 3720 3685 4775 807       ----------- 19 digits ------------
+            // -9223 3720 3685 4775 808     
+            // If we really care about that 1 extra for negative numbers we can store numbers as unsigned in the Tokens
+            static constexpr const char* INT64_T_MAX{ "9223372036854775807" };
+
+            // It's most likely that the string is less than 19 digits long. If so there is no need to test further.
+            if (literal.size() < 19)
+            {
+                return true;
+            }
+
+            // If it's exactly 19 digits long we have to check.
+            if (literal.size() == 19)
+            {
+                for (int i = 0; i != 19; i++)
+                {
+                    if (literal[i] < INT64_T_MAX[i])
+                    {
+                        return true;
+                    }
+                    else if (literal[i] > INT64_T_MAX[i])
+                    {
+                        return false;
+                    }
+                }
+
+                return true;    // Means it's equal.
+            }
+
+            return false;
+        }
+
         bool CompareTokens(const Token& left, const Token& right)
         {
             VERIFY(left.mType == right.mType) {}
@@ -69,8 +103,8 @@ namespace interpreter
             }
             else
             {
-                const auto leftValue{ std::get<UnsignedNumber>(left.mLiteral) };
-                const auto rightValue{ std::get<UnsignedNumber>(right.mLiteral) };
+                const auto leftValue{ std::get<Number>(left.mLiteral) };
+                const auto rightValue{ std::get<Number>(right.mLiteral) };
                 VERIFY(leftValue == rightValue) {}
                 else
                 {
@@ -78,7 +112,7 @@ namespace interpreter
                         " : " << rightValue << std::endl;
 
                     return false;
-                }
+                    }
             }
 
             return true;
@@ -113,7 +147,7 @@ namespace interpreter
         void AssignToToken(Token& token, TokenType tokenType, Number literal, CharacterRange* characterRange)
         {
             token.mType = tokenType;
-            token.mLiteral.emplace<UnsignedNumber>(literal);
+            token.mLiteral.emplace<Number>(literal);
             memcpy(token.mCharacterRange, characterRange, 2 * sizeof(CharacterRange));
         }
 
@@ -140,7 +174,7 @@ namespace interpreter
             std::ostringstream out;
             std::visit([&out](auto& arg)
                 {
-                   out << TypeName<std::decay_t<decltype(arg)>>();
+                    out << TypeName<std::decay_t<decltype(arg)>>();
                 }, primitive);
 
             return out.str();

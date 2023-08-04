@@ -33,20 +33,24 @@ namespace interpreter
                     count++;
                 }
             }
-            if (count && (CreateDirectoryA("../output", nullptr) || ERROR_ALREADY_EXISTS == GetLastError()))
+            if (count && (CreateDirectoryA("../../output", nullptr) || ERROR_ALREADY_EXISTS == GetLastError()))
             {
-                std::ofstream out{ std::format("../output/Interpreter-{}.txt", getTime()) };
-                if (!out)
+                std::ofstream out{ std::format("../../output/Interpreter-{}.txt", getTime()) };
+                if (!out || out.bad())
                 {
                     std::cout << "Error: creating file\n";
                 }
 
-                for (auto& msg : mData)
+                if (out.good())
                 {
-                    if (msg.type >= GetLoggerSeverity())
+                    for (auto& msg : mData)
                     {
-                        out << msg.message << '\n';
+                        if (msg.type >= GetLoggerSeverity())
+                        {
+                            out << MessageString(msg.type) << msg.message << '\n';
+                        }
                     }
+                    out.close();
                 }
             }
         }
@@ -66,9 +70,8 @@ namespace interpreter
 
     void Logger::Log(MessageType type, const std::string& message)
     {
-#ifdef DEBUG_ON
-        std::cout << message << '\n';
-#endif
+        std::cout << MessageString(type) << message << '\n';
+
         FileLogger().mData.emplace_back(type, message);
     }
 
@@ -85,6 +88,29 @@ namespace interpreter
     const MessageType& Logger::GetLoggerSeverity()
     {
         return SetLoggerSeverity(MessageType::UNDEFINED);
+    }
+
+    std::string Logger::MessageString(MessageType type)
+    {
+        switch (type)
+        {
+        case MessageType::MESSAGE:
+            return "MESSAGE: ";
+            break;
+        case MessageType::WARNING:
+            return "WARNING: ";
+            break;
+        case MessageType::ERRORS:
+            return "ERROR: ";
+            break;
+        case MessageType::UNDEFINED:
+            return "UNDEFINED: ";
+            break;
+        default: return "MessageType hasn't been mapped.";
+            break;
+        }
+
+        return {};
     }
 
     void LOG_MESSAGE(ast::Node* node, MessageType type /*= MessageType::MESSAGE*/)

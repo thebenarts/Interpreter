@@ -31,7 +31,7 @@ namespace interpreter
     typedef int16_t CharacterRange;
     typedef uint64_t UnsignedNumber;
     typedef int64_t Number;
-    typedef std::variant<std::monostate, std::string, UnsignedNumber, bool> TokenPrimitive;
+    typedef std::variant<std::monostate, std::string, Number, bool> TokenPrimitive;
     typedef std::string ObjectType;
 
     typedef std::unique_ptr<ast::Expression> ExpressionUniquePtr;

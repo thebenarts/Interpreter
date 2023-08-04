@@ -16,13 +16,13 @@ namespace interpreter
     struct IntegerType : public Object
     {
         IntegerType() = default;
-        IntegerType(UnsignedNumber num) {
+        IntegerType(Number num) {
             if (num > INT64_MAX)
             {
                 LOG_MESSAGE(MessageType::ERRORS, std::format("Integer can't be represented in negative form due to inssuficent space: {}", num));
                 assert(false);
             }
-            mValue = utility::narrow_cast<Number>(num);
+            mValue = num;
         }
 
         virtual ObjectType Type() const override;

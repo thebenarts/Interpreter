@@ -12,7 +12,7 @@ namespace interpreter
         }
         else if (sNumberTokens.contains(token.mType))
         {
-            out << std::get<UnsignedNumber>(token.mLiteral);
+            out << std::get<Number>(token.mLiteral);
         }
         else if (sBooleanTokens.contains(token.mType))
         {
@@ -44,7 +44,7 @@ namespace interpreter
                 {
                     out << arg;
                 }
-                else if constexpr (std::is_same_v<UnsignedNumber, Type>)
+                else if constexpr (std::is_same_v<Number, Type>)
                 {
                     out << arg;
                 }

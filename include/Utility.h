@@ -29,7 +29,9 @@ namespace interpreter
     {
         bool IsLetter(char character);
         bool IsDigit(char character);
-        int64_t ToNumber(std::string_view literal);
+        Number ToNumber(std::string_view literal);
+        // Checks for overflow on the string that's about to be turned into int64_t
+        bool ValidateStringNumber(std::string_view literal);
 
         bool CompareTokens(const Token& left, const Token& right);
         std::string ConvertTokenTypeToString(TokenType tokenType);

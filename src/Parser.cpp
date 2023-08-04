@@ -521,7 +521,7 @@ namespace interpreter
                 if (expression->mExpressionType == ast::ExpressionType::IntegerExpression)
                 {
                     const auto primitive{ GetAndValidateTokenPrimtive(expression) };
-                    return std::make_shared<IntegerType>(std::get<UnsignedNumber>(primitive));
+                    return std::make_shared<IntegerType>(std::get<Number>(primitive));
                 }
                 else if (expression->mExpressionType == ast::ExpressionType::BooleanExpression)
                 {

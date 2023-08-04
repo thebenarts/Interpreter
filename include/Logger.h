@@ -35,6 +35,7 @@ namespace interpreter
         static void Log(MessageType type, const std::string& message);
 
     private:
+        static std::string MessageString(MessageType type);
         enum class LoggerType
         {
             CMD,
