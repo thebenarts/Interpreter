@@ -7,6 +7,13 @@
 
 namespace interpreter
 {
+    namespace ObjectTypes
+    {
+        constexpr const char* INTEGER_OBJECT{ "int" };
+        constexpr const char* BOOLEAN_OBJECT{ "bool" };
+        constexpr const char* NULL_OBJECT{ "NULL" };
+    }
+
     struct Object
     {
         virtual ObjectType Type() const = 0;

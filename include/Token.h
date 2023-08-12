@@ -63,6 +63,7 @@ namespace interpreter
     };
 
     std::ostream& operator<<(std::ostream& out, const Token& token);
+    std::ostream& operator<<(std::ostream& out, const TokenType& tokenType);
 
     const std::unordered_map<std::string, TokenType> sKeywordsMap
     {

@@ -28,7 +28,7 @@ namespace interpreter
             int count{};
             for (const auto& msg : mData)
             {
-                if (msg.type >= GetLoggerSeverity())
+                if (msg.mType >= GetLoggerSeverity())
                 {
                     count++;
                 }
@@ -45,9 +45,9 @@ namespace interpreter
                 {
                     for (auto& msg : mData)
                     {
-                        if (msg.type >= GetLoggerSeverity())
+                        if (msg.mType >= GetLoggerSeverity())
                         {
-                            out << MessageString(msg.type) << msg.message << '\n';
+                            out << MessageString(msg.mType) << msg.mMessage << '\n';
                         }
                     }
                     out.close();
@@ -68,7 +68,7 @@ namespace interpreter
         return *sFileLogger;
     }
 
-    void Logger::Log(MessageType type, const std::string& message)
+    void Logger::Log(MessageType type, std::string_view message)
     {
         std::cout << MessageString(type) << message << '\n';
 
@@ -123,9 +123,13 @@ namespace interpreter
         Logger::Log(type, node->Log());
     }
 
-    void LOG_MESSAGE(MessageType type, const std::string& message)
+    void LOG_MESSAGE(MessageType type, std::string_view message)
     {
         Logger::Log(type, message);
     }
 
+    void LOG_MESSAGE(std::string_view message)
+    {
+        Logger::Log(MessageType::MESSAGE, message);
+    }
 }

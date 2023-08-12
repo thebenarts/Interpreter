@@ -52,9 +52,11 @@ namespace interpreter
         // Evaluate
         static ObjectSharedPtr GetNativeBoolObject(bool value);
         static ObjectSharedPtr GetNativeNullObject();
-        static ObjectSharedPtr EvaluatePrefixExpression(Token operatorToken, ObjectSharedPtr right);
-        static ObjectSharedPtr EvaluatePrefixBangOperatorExpression(ObjectSharedPtr right);
-        static ObjectSharedPtr EvaluatePrefixMinusOperatorExpression(ObjectSharedPtr right);
+        static ObjectSharedPtr EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right);
+        static ObjectSharedPtr EvaluatePrefixBangOperatorExpression(const ObjectSharedPtr& right);
+        static ObjectSharedPtr EvaluatePrefixMinusOperatorExpression(const ObjectSharedPtr& right);
+        static ObjectSharedPtr EvaluateInfixExpression(TokenType operatorToken, const ObjectSharedPtr& left, const ObjectSharedPtr& right);
+        static ObjectSharedPtr EvaluateInfixIntegerExpression(TokenType operatorToken, const ObjectSharedPtr& left, const ObjectSharedPtr& right);
 
         // Lexer utilities
         void AdvanceToken();

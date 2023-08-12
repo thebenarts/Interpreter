@@ -737,6 +737,22 @@ namespace interpreter
 
     TEST_CASE("EvalIntegerExpressionTest")
     {
+        //5;
+        //101;
+        //-3;
+        //-104;
+        //5 + 5 + 5 + 5 - 10;
+        //2 * 2 * 2 * 2 * 2;
+        //-50 + 100 + -50;
+        //5 * 2 + 10;
+        //5 + 2 * 10;
+        //20 + 2 * -10;
+        //50 / 2 * 2 + 10;
+        //2 * ( 5 + 10);
+        //3 * 3 * 3 + 10;
+        //3 * (3 * 3) + 10;
+        //(5 + 10 * 2 + 15 / 3) * 2 + -10
+
         std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/evalIntegerExpressionTest.txt") };
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
@@ -747,8 +763,8 @@ namespace interpreter
             return Parser::Evaluate(statement);
         };
 
-        std::vector<int> expectedVal{ 5,101 };
-        for (int i = 0; i != 2; i++)
+        std::vector<int> expectedVal{ 5, 101, -3, -104 , 10 , 32, 0, 20, 25, 0, 60, 30, 37,  37, 50};
+        for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
             const auto val{ testEval(statement.get()) };
@@ -798,7 +814,7 @@ namespace interpreter
             return Parser::Evaluate(statement);
         };
 
-        std::vector<Number> expectedVal{ 5,10,-5,-10 , 9223372036854775807, -9223372036854775807};
+        std::vector<Number> expectedVal{ 5,10,-5,-10 , 9223372036854775807, -9223372036854775807 };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
@@ -809,6 +825,16 @@ namespace interpreter
 
     TEST_CASE("EvalPrefixBangExpressionTest")
     {
+        //!0;
+        //!1;
+        //!5;
+        //!0;
+        //!4;
+        //true;
+        //false;
+        //!true;
+        //!false;
+
         std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/evalBangPrefixExpressionTest.txt") };
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };

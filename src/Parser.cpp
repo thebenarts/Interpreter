@@ -495,6 +495,8 @@ namespace interpreter
 
     ObjectSharedPtr Parser::Evaluate(ast::Node* node)
     {
+        VERIFY(node);   // To catch issues.
+
         // Helper for PrimitiveExpressions
         const auto GetAndValidateTokenPrimtive = [](ast::Expression* node) -> TokenPrimitive {
             const auto optionalToken{ node->TokenNode() };
@@ -532,7 +534,17 @@ namespace interpreter
                 {
                     const auto prefixExpression{ dynamic_cast<ast::PrefixExpression*>(expression) };
                     const auto right{ Evaluate(prefixExpression->mRightSideValue.get()) };
-                    return EvaluatePrefixExpression(prefixExpression->mOperator, right);
+                    return EvaluatePrefixExpression(prefixExpression->mOperator.mType, right);
+                }
+                else if (expression->mExpressionType == ast::ExpressionType::InfixExpression)
+                {
+                    const auto infixExpression{ dynamic_cast<ast::InfixExpression*>(expression) };
+                    VERIFY(infixExpression)
+                    {
+                        const auto left{ Evaluate(infixExpression->mLeftExpression.get()) };
+                        const auto right{ Evaluate(infixExpression->mRightExpression.get()) };
+                        return EvaluateInfixExpression(infixExpression->mToken.mType, left, right);
+                    }
                 }
             }
             break;
@@ -543,9 +555,9 @@ namespace interpreter
         return nullptr;
     }
 
-    ObjectSharedPtr Parser::EvaluatePrefixExpression(Token operatorToken, ObjectSharedPtr right)
+    ObjectSharedPtr Parser::EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right)
     {
-        switch (operatorToken.mType)
+        switch (operatorToken)
         {
         case TokenType::BANG:   // "!"
             return EvaluatePrefixBangOperatorExpression(right);
@@ -554,12 +566,13 @@ namespace interpreter
             return EvaluatePrefixMinusOperatorExpression(right);
             break;
         default:
+            LOG_MESSAGE(MessageType::ERRORS, std::format("No Prefix Evaluator for : {}", utility::ConvertTokenTypeToString(operatorToken)));
             return GetNativeNullObject();
         }
         return GetNativeNullObject();
     }
 
-    ObjectSharedPtr Parser::EvaluatePrefixBangOperatorExpression(ObjectSharedPtr right)
+    ObjectSharedPtr Parser::EvaluatePrefixBangOperatorExpression(const ObjectSharedPtr& right)
     {
         // TODOBB: swap dynamic_cast to static_cast once it's confirmed to work.
         if (right->Type() == "bool")
@@ -590,7 +603,7 @@ namespace interpreter
         return GetNativeBoolObject(false);
     }
 
-    ObjectSharedPtr Parser::EvaluatePrefixMinusOperatorExpression(ObjectSharedPtr right)
+    ObjectSharedPtr Parser::EvaluatePrefixMinusOperatorExpression(const ObjectSharedPtr& right)
     {
         const auto intObject{ dynamic_cast<IntegerType*>(right.get()) };
         VERIFY(intObject)
@@ -598,6 +611,51 @@ namespace interpreter
             intObject->mValue = ~intObject->mValue;
             intObject->mValue += 1;
             return right;
+        }
+
+        return GetNativeNullObject();
+    }
+
+    ObjectSharedPtr Parser::EvaluateInfixExpression(TokenType operatorToken, const ObjectSharedPtr& left, const ObjectSharedPtr& right)
+    {
+        VERIFY(left && right)
+        {
+            if (left->Type() == right->Type())
+            {
+                if (left->Type() == ObjectTypes::INTEGER_OBJECT)
+                {
+                    return EvaluateInfixIntegerExpression(operatorToken, left, right);
+                }
+            }
+        }
+
+        return GetNativeNullObject();
+    }
+
+    ObjectSharedPtr Parser::EvaluateInfixIntegerExpression(TokenType operatorToken, const ObjectSharedPtr& left, const ObjectSharedPtr& right)
+    {
+        const auto leftInt{ dynamic_cast<IntegerType*>(left.get()) };
+        const auto rightInt{ dynamic_cast<IntegerType*>(right.get()) };
+        VERIFY(leftInt && rightInt)
+        {
+            LOG(MessageType::ERRORS, "Operator : ", operatorToken ," not supported by Number types.");
+            switch (operatorToken)
+            {
+            case TokenType::PLUS:   // '+'
+                return std::make_shared<IntegerType>(leftInt->mValue + rightInt->mValue);
+                break;
+            case TokenType::MINUS:  // '-'
+                return std::make_shared<IntegerType>(leftInt->mValue - rightInt->mValue);
+                break;
+            case TokenType::ASTERISK:  // '*'
+                return std::make_shared<IntegerType>(leftInt->mValue * rightInt->mValue);
+                break;
+            case TokenType::SLASH:  // '/'
+                return std::make_shared<IntegerType>(leftInt->mValue / rightInt->mValue);
+                break;
+            default:
+                LOG(MessageType::ERRORS, "Operator : ", operatorToken ," not supported by Number types.");
+            }
         }
 
         return GetNativeNullObject();

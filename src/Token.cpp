@@ -1,4 +1,5 @@
 #include "Token.h"
+#include "Utility.h"
 #include <sstream>
 #include <assert.h>
 
@@ -27,6 +28,12 @@ namespace interpreter
             }
         }
 
+        return out;
+    }
+
+    std::ostream& operator<<(std::ostream& out, const TokenType& tokenType)
+    {
+        out << utility::ConvertTokenTypeToString(tokenType);
         return out;
     }
 

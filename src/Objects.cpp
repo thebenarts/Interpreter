@@ -45,7 +45,7 @@ namespace interpreter
 
     std::string NullType::Inspect() const
     {
-        return {};
+        return "nullptr";
     };
 
 }
