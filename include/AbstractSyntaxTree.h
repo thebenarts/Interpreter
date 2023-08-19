@@ -27,7 +27,8 @@ namespace interpreter {
             {TokenType::PLUS, SUM},
             {TokenType::MINUS, SUM},
             {TokenType::SLASH, PRODUCT},
-            {TokenType::ASTERISK, PRODUCT}
+            {TokenType::ASTERISK, PRODUCT},
+            {TokenType::LPAREN, CALL},
         };
 
         enum class NodeType : uint8_t
@@ -52,7 +53,9 @@ namespace interpreter {
             BooleanExpression,
             PrefixExpression,
             InfixExpression,
-            IfExpression
+            IfExpression,
+            FunctionExpression,
+            CallExpression,
         };
 
         struct Node
@@ -76,7 +79,7 @@ namespace interpreter {
             virtual ~Expression() {};
         };
 
-        struct LetStatement : public Statement
+        struct LetStatement final : public Statement
         {
             LetStatement() { mNodeType = NodeType::LetStatement; }
             virtual ~LetStatement() {};
@@ -91,7 +94,7 @@ namespace interpreter {
             ExpressionUniquePtr mValue;         // Expression to assign 
         };
 
-        struct ReturnStatement : public Statement 
+        struct ReturnStatement final : public Statement
         {
             ReturnStatement() { mNodeType = NodeType::ReturnStatement; }
             virtual ~ReturnStatement() {};
@@ -105,7 +108,7 @@ namespace interpreter {
             ExpressionUniquePtr mValue;         // Return value expression
         };
 
-        struct BlockStatement : public Statement
+        struct BlockStatement final : public Statement
         {
             BlockStatement() { mNodeType = NodeType::BlockStatement; }
             virtual ~BlockStatement() {};
@@ -119,7 +122,7 @@ namespace interpreter {
             std::vector<StatementUniquePtr> mStatements;
         };
 
-        struct ConditionBlockStatement : public Statement
+        struct ConditionBlockStatement final : public Statement
         {
             ConditionBlockStatement() { mNodeType = NodeType::ConditionBlockStatement; }
             virtual ~ConditionBlockStatement() {};
@@ -134,7 +137,7 @@ namespace interpreter {
             BlockStatementUniquePtr mBlock;     // holds the statement 
         };
 
-        struct ExpressionStatement : public Statement
+        struct ExpressionStatement final : public Statement
         {
             ExpressionStatement() { mNodeType = NodeType::ExpressionStatement; }
             virtual ~ExpressionStatement() {};
@@ -148,10 +151,10 @@ namespace interpreter {
             ExpressionUniquePtr mValue;         // Rest of the expression
         };
 
-        struct PrimitiveExpression : public Expression
+        struct PrimitiveExpression final : public Expression
         {
             PrimitiveExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::PrimitiveExpression; }
-            virtual ~PrimitiveExpression(){}
+            virtual ~PrimitiveExpression() {}
 
             virtual std::optional<Token> TokenNode() override;
             virtual std::optional<Token> ExpressionNode() override;
@@ -161,7 +164,7 @@ namespace interpreter {
             Token mToken;
         };
 
-        struct PrefixExpression : public Expression 
+        struct PrefixExpression final : public Expression
         {
             PrefixExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::PrefixExpression; }
             virtual ~PrefixExpression() {};
@@ -176,7 +179,7 @@ namespace interpreter {
             ExpressionUniquePtr mRightSideValue;
         };
 
-        struct InfixExpression : public Expression
+        struct InfixExpression final : public Expression
         {
             InfixExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::InfixExpression; }
             virtual ~InfixExpression() {};
@@ -190,10 +193,10 @@ namespace interpreter {
             ExpressionUniquePtr mRightExpression;
         };
 
-        struct IfExpression : public Expression
+        struct IfExpression final : public Expression
         {
             IfExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::IfExpression; }
-            virtual ~IfExpression(){}
+            virtual ~IfExpression() {}
 
             virtual std::optional<Token> TokenNode() override;
             virtual std::optional<Token> ExpressionNode() override;
@@ -206,11 +209,46 @@ namespace interpreter {
             BlockStatementUniquePtr mAlternative;
         };
 
-        struct Program
+        struct FunctionExpression final : public Expression
         {
-            std::vector<StatementUniquePtr> mStatements;
+            FunctionExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::FunctionExpression; }
+            virtual ~FunctionExpression() {}
 
-            std::string Log();
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> ExpressionNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;   // fn token
+            std::vector<ExpressionUniquePtr> mParameters;
+            BlockStatementUniquePtr mBody;
+        };
+
+        struct CallExpression final : public Expression
+        {
+            CallExpression() { mNodeType = NodeType::Expression; mExpressionType = ExpressionType::CallExpression; }
+            virtual ~CallExpression() {}
+
+            virtual std::optional<Token> TokenNode() override;
+            virtual std::optional<Token> ExpressionNode() override;
+            virtual std::string Log() override;
+
+            // Variables
+            Token mToken;   // "(" token
+            ExpressionUniquePtr mFunction;  // should hold FunctionExpression
+            std::vector<ExpressionUniquePtr> mArguments;
+        };
+
+        struct Program final : public Node
+        {
+            Program() { mNodeType = NodeType::Program; }
+            virtual ~Program() {};
+
+            std::optional<Token> TokenNode() override;
+            std::string Log() override;
+
+            // Variables
+            std::vector<StatementUniquePtr> mStatements;
         };
     }
 }

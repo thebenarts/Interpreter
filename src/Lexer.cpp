@@ -1,6 +1,8 @@
 #include "Lexer.h"
 #include "Token.h"
 #include "Utility.h"
+#include "Logger.h"
+#include <format>
 
 namespace interpreter
 {
@@ -113,8 +115,15 @@ namespace interpreter
             else if (utility::IsDigit(mChar))
             {
                 std::string_view number{ ReadNumber() };
-                // TODO: think of a way to unify range input.
-                // Due to how we built character ranges we have to directly pass the range in the case of traversed ranges
+                if (!utility::ValidateStringNumber(number))
+                {
+                    LOG_MESSAGE(MessageType::ERRORS, std::format("line: {} character rage: [ {} - {} ], Number can't fit into signed 64 bit integer: {}",
+                        token.mLineNumber, mCharacterRange[0], mCharacterRange[1], number));
+
+                    // For now we just send it as a 0.
+                    utility::AssignToToken(token, TokenType::INT, Number(0) , mCharacterRange);
+                    return token;
+                }
                 utility::AssignToToken(token, TokenType::INT, utility::ToNumber(number), mCharacterRange);
                 return token;
             }

@@ -2,12 +2,15 @@
 #include <stdint.h>
 #include <memory>
 #include <variant>
+#include <string>
 
 namespace interpreter
 {
     class Lexer;
     class Parser;
     class Token;
+    class Message;
+    class Object;
 
     namespace ast
     {
@@ -26,8 +29,10 @@ namespace interpreter
     }
 
     typedef int16_t CharacterRange;
+    typedef uint64_t UnsignedNumber;
     typedef int64_t Number;
-    typedef std::variant<std::string, Number, bool> TokenPrimitive;
+    typedef std::variant<std::monostate, std::string, Number, bool> TokenPrimitive;
+    typedef std::string ObjectType;
 
     typedef std::unique_ptr<ast::Expression> ExpressionUniquePtr;
     typedef std::unique_ptr<ast::Statement> StatementUniquePtr;
@@ -41,9 +46,12 @@ namespace interpreter
     typedef std::unique_ptr<ast::InfixExpression> InfixExpressionUniquePtr;
     typedef std::unique_ptr<ast::IfExpression> IfExpressionUniquePtr;
     typedef std::unique_ptr<ast::Program> ProgramUniquePtr;
+    typedef std::unique_ptr<Object> ObjectUniquePtr;
+    typedef std::shared_ptr<Object> ObjectSharedPtr;
 
     typedef std::unique_ptr<Lexer> LexerUniquePtr;
     typedef std::unique_ptr<Parser> ParserUniquePtr;
 
     typedef std::shared_ptr<Token> TokenSharedPtr;
+    typedef std::shared_ptr<Message> MessageSharedPtr;
 }

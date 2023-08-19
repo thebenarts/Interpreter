@@ -207,7 +207,78 @@ namespace interpreter {
             return result.str();
         }
 
+        // ------------------------------------------------------------ Function Expression -----------------------------------------------------
+
+        std::optional<Token> FunctionExpression::TokenNode() { return mToken; }
+        std::optional<Token> FunctionExpression::ExpressionNode() { return {}; }
+
+        std::string FunctionExpression::Log()
+        {
+            std::ostringstream result;
+
+            const auto token{ TokenNode() };
+            VERIFY(token)
+            {
+                result << *token;
+            }
+            result << '(';
+
+            for (int i = 0; i != mParameters.size(); i++)
+            {
+                if (const auto& parameter{ mParameters[i] })
+                {
+                    result << parameter->Log();
+                    if (i != mParameters.size() - 1)
+                    {
+                        result << ", ";
+                    }
+                }
+            }
+            result << ") ";
+            VERIFY(mBody)
+            {
+                result << mBody->Log();
+            }
+
+            return result.str();
+        }
+
+        // ------------------------------------------------------------ Call Expression -----------------------------------------------------
+
+        std::optional<Token> CallExpression::TokenNode() { return mToken; }
+        std::optional<Token> CallExpression::ExpressionNode() { return {}; }
+
+        std::string CallExpression::Log()
+        {
+            std::ostringstream result;
+
+            VERIFY(mFunction)
+            {
+                result << mFunction->Log() << '(';
+            }
+
+            for (int i = 0; i != mArguments.size(); i++)
+            {
+                if (const auto& parameter{ mArguments[i] })
+                {
+                    result << parameter->Log();
+                    if (i != mArguments.size() - 1)
+                    {
+                        result << ", ";
+                    }
+                }
+            }
+            result << ')';
+
+            return result.str();
+        }
+
         // ------------------------------------------------------------ Program -----------------------------------------------------
+
+        std::optional<Token> Program::TokenNode()
+        {
+            return {};
+        }
 
         std::string Program::Log()
         {
@@ -217,7 +288,10 @@ namespace interpreter {
             {
                 if (statement)
                 {
-                    result << statement->Log() << std::endl;
+                    if (statement)
+                    {
+                        result << statement->Log() << std::endl;
+                    }
                 }
             }
 
