@@ -9,7 +9,7 @@ namespace interpreter
 
     ObjectType IntegerType::Type() const
     {
-        return "int";
+        return ObjectTypes::INTEGER_OBJECT;
     };
 
     std::string IntegerType::Inspect() const
@@ -23,7 +23,7 @@ namespace interpreter
 
     ObjectType BoolType::Type() const
     {
-        return "bool";
+        return ObjectTypes::BOOLEAN_OBJECT;
     };
 
     std::string BoolType::Inspect() const
@@ -40,7 +40,7 @@ namespace interpreter
 
     ObjectType NullType::Type() const
     {
-        return "NULL";
+        return ObjectTypes::NULL_OBJECT;
     };
 
     std::string NullType::Inspect() const
@@ -48,6 +48,27 @@ namespace interpreter
         return "nullptr";
     };
 
+    // ------------------------------------------------------------ Return Type -----------------------------------------------------
+
+    ObjectType ReturnType::Type() const
+    {
+        return ObjectTypes::RETURN_OBJECT;
+    };
+
+    std::string ReturnType::Inspect() const
+    {
+        return mValue ? mValue->Inspect() : "";
+    };
+
+    // ------------------------------------------------------------ Error Type -----------------------------------------------------
+
+    ObjectType ErrorType::Type() const
+    {
+        return ObjectTypes::ERROR_OBJECT;
+    };
+
+    std::string ErrorType::Inspect() const
+    {
+        return mMessage;
+    };
 }
-
-

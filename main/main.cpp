@@ -4,6 +4,7 @@
 #include "AbstractSyntaxTree.h"
 #include "Parser.h"
 #include "Objects.h"
+#include "Evaluator.h"
 
 #include <ranges>
 #include <algorithm>
@@ -25,7 +26,7 @@ int main()
         {
             if (node)
             {
-                const auto object{ interpreter::Parser::Evaluate(node.get()) };
+                const auto object{ interpreter::Evaluator::Evaluate(node.get()) };
                 if (object)
                 {
                     interpreter::LOG_MESSAGE(object->Inspect());

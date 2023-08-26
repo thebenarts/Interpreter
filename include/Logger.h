@@ -7,7 +7,11 @@
 
 namespace interpreter
 {
-#define LOG(type,...) LogImplementation(type, std::source_location::current(), __VA_ARGS__)
+#define LOG(type,...) do {Log_impl(type, std::source_location::current(), __VA_ARGS__);}    \
+while (0)
+
+#define LOG_INTERNAL(type,location, ...) do {Log_impl(type,location, __VA_ARGS__);}         \
+while (0)
 
     enum MessageType : uint8_t
     {
@@ -57,13 +61,47 @@ namespace interpreter
     void LOG_MESSAGE(MessageType type, std::string_view message);
     void LOG_MESSAGE(std::string_view message);
 
-    template<typename... T>
-    void LogImplementation(MessageType type , const std::source_location location , const T&... args)
+
+    inline void FormatLocation_impl(std::ostringstream& stream, const std::source_location location)
+    {
+        stream << location.file_name() << ' ' << location.line() << ' ' << location.function_name() << ' ';
+    }
+
+    inline std::string FormatLocation(const std::source_location location)
     {
         std::ostringstream stream;
-        stream << location.file_name() << ' ' << location.line() << ' ' << location.function_name() << ' ';
-        (stream << ... << args);
+        FormatLocation_impl(stream, location);
 
-        LOG_MESSAGE(type, stream.str());
+        return stream.str();
+    }
+
+    template<typename... T>
+    void FormatVariadicArguments_impl(std::ostringstream& stream, const T&... args)
+    {
+        (stream << ... << args);
+    }
+
+    template<typename... T>
+    std::string FormatVariadicArguments(const T&... args)
+    {
+        std::ostringstream stream;
+        FormatVariadicArgumets_impl(args...);
+        return stream.str();
+    }
+
+    template<typename... T>
+    std::string FormatString(const std::source_location location, const T&... args)
+    {
+        std::ostringstream stream;
+        FormatLocation_impl(stream, location);
+        FormatVariadicArguments_impl(stream, args...);
+
+        return stream.str();
+    }
+
+    template<typename... T>
+    void Log_impl(MessageType type , const std::source_location location , const T&... args)
+    {
+        LOG_MESSAGE(type, FormatString(location, args...));
     }
 }

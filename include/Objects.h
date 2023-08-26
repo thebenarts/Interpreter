@@ -7,11 +7,16 @@
 
 namespace interpreter
 {
+
+#define NEW_ERROR(...) (NewError(MessageType::ERRORS, std::source_location::current(), __VA_ARGS__))
+
     namespace ObjectTypes
     {
         constexpr const char* INTEGER_OBJECT{ "int" };
         constexpr const char* BOOLEAN_OBJECT{ "bool" };
         constexpr const char* NULL_OBJECT{ "NULL" };
+        constexpr const char* RETURN_OBJECT{ "RETURN_VALUE" };
+        constexpr const char* ERROR_OBJECT{ "ERROR_VALUE" };
     }
 
     struct Object
@@ -45,6 +50,7 @@ namespace interpreter
 
         virtual ObjectType Type() const override;
         virtual std::string Inspect() const override;
+        // Note overriding the bool operator is to make working with "NullType" easier not for actual "BoolType"
 
         bool mValue;
     };
@@ -53,5 +59,39 @@ namespace interpreter
     {
         virtual ObjectType Type() const override;
         virtual std::string Inspect() const override;
+    };
+
+    struct ReturnType : public Object
+    {
+        explicit ReturnType(ObjectSharedPtr obj) : mValue(obj) {}
+
+        virtual ObjectType Type() const override;
+        virtual std::string Inspect() const override;
+
+        ObjectSharedPtr mValue;
+    };
+
+    struct ErrorType : public Object
+    {
+        ErrorType() = default;
+        ErrorType(std::string_view context, std::string_view message) : mContext(context), mMessage(message) {}
+
+        virtual ObjectType Type() const override;
+        virtual std::string Inspect() const override;
+
+        std::string mContext;
+        std::string mMessage;
+    };
+
+    template<typename... T>
+    std::shared_ptr<ErrorType> NewError(MessageType type, std::source_location location, const T&... args)
+    {
+        std::ostringstream stream;
+        FormatLocation_impl(stream, location);
+        const auto locationSize{ stream.view().size() };
+        FormatVariadicArguments_impl(stream, args...);
+        const auto fullMessageView{ stream.view() };
+        LOG_MESSAGE(type, fullMessageView);
+        return std::make_shared<ErrorType>(std::string_view{ fullMessageView.begin(), fullMessageView.begin() + locationSize }, std::string_view{ fullMessageView.begin() + locationSize, fullMessageView.end() });
     };
 }

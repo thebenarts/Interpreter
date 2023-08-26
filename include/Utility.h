@@ -16,6 +16,32 @@
 
 #define VERIFY(expression) assert(expression); if(expression) 
 
+#define VERIFY_(expression) assert(expression); expression
+
+#define ASSERT_MESSAGE(expression, messageType, ...)    \
+do {    \
+    assert(expression); \
+    if(!expression)     \
+        LOG(messageType, __VA_ARGS__); }\
+while (0)
+
+#define ASSERT_AND_RETURN(expression, returnValue)  \
+do {    \
+    assert(expression); \
+    if(!expression)     \
+        return returnValue; \
+}while(0)
+
+#define ASSERT_MESSAGE_AND_RETURN(expression, messageType, returnValue, ...)    \
+do {  \
+    assert(expression); \
+    if (!expression)    \
+    {                   \
+        LOG(messageType, __VA_ARGS__);  \
+        return returnValue;             \
+    }                   \
+} while(0)
+
 #define VERIFY_MESSAGE(expression,message) if (!expression) std::cout << message << std::endl;  \
     assert(expression); \
     if(expression)

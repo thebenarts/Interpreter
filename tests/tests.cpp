@@ -2,6 +2,7 @@
 #include "Parser.h"
 #include "AbstractSyntaxTree.h"
 #include "Objects.h"
+#include "Evaluator.h"
 #include <limits>
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
@@ -23,6 +24,13 @@ namespace interpreter
             TokenType opType;
             TokenPrimitive right;
         };
+
+        ProgramUniquePtr CreateProgramFromString(std::string_view text)
+        {
+            interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(text) };
+            interpreter::Parser parser{ std::move(lexer) };
+            return parser.ParseProgram();
+        }
 
         bool TestIdentifier(ast::Expression* expression, std::string_view expectedValue)
         {
@@ -760,10 +768,10 @@ namespace interpreter
 
         const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
         {
-            return Parser::Evaluate(statement);
+            return Evaluator::Evaluate(statement);
         };
 
-        std::vector<int> expectedVal{ 5, 101, -3, -104 , 10 , 32, 0, 20, 25, 0, 60, 30, 37,  37, 50};
+        std::vector<int> expectedVal{ 5, 101, -3, -104 , 10 , 32, 0, 20, 25, 0, 60, 30, 37,  37, 50 };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
@@ -778,6 +786,11 @@ namespace interpreter
         const auto boolPtr{ dynamic_cast<BoolType*>(objectRawPtr) };
         REQUIRE(boolPtr);
         REQUIRE(boolPtr->mValue == expectedValue);
+        if (boolPtr->mValue != expectedValue)
+        {
+            LOG(MessageType::ERRORS, "Expected -> ", expectedValue, "got -> ", boolPtr->mValue);
+            return false;
+        }
         return true;
     }
 
@@ -788,16 +801,38 @@ namespace interpreter
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
 
-        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
-        {
-            return Parser::Evaluate(statement);
-        };
-
-        std::vector<bool> expectedVal{ false, true };
-        for (int i = 0; i != 2; i++)
+        std::vector<bool> expectedVal{ true, false, true, false, false, false, true, false, false, true };
+        for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ testEval(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get()) };
+            TestBoolObject(val, expectedVal[i]);
+        }
+    }
+
+    TEST_CASE("EvalBoolInfixExpression")
+    {
+        std::string parserInput{ interpreter::utility::ReadTextFile("E:/dev/Interpreter/tests/input/evalBoolInfixExpressionTest.txt") };
+        interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+        interpreter::Parser parser{ std::move(lexer) };
+        interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+
+        //true == true;
+        //false == false;
+        //true == false;
+        //true != false;
+        //false != true;
+        //false != false;
+        //(1 < 2) == true;
+        //(1 < 2) == false;
+        //(1 > 2) == true;
+        //(1 > 2) == false;
+
+        std::vector<bool> expectedVal{ true, true, false, true, true, false, true, false, false, true };
+        for (int i = 0; i != expectedVal.size(); i++)
+        {
+            const auto& statement{ program->mStatements[i] };
+            const auto val{ Evaluator::Evaluate(statement.get()) };
             TestBoolObject(val, expectedVal[i]);
         }
     }
@@ -809,16 +844,11 @@ namespace interpreter
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
 
-        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
-        {
-            return Parser::Evaluate(statement);
-        };
-
         std::vector<Number> expectedVal{ 5,10,-5,-10 , 9223372036854775807, -9223372036854775807 };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ testEval(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get()) };
             TestIntegerObject(val, expectedVal[i]);
         }
     }
@@ -840,17 +870,42 @@ namespace interpreter
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
 
-        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
-        {
-            return Parser::Evaluate(statement);
-        };
-
         std::vector<bool> expectedVal{ true, false, false, true, false, true, false, false, true };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ testEval(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get()) };
             TestBoolObject(val, expectedVal[i]);
+        }
+    }
+
+    TEST_CASE("TestErrorHandling")
+    {
+        struct TestData
+        {
+            std::string input;
+            std::string expected;
+        };
+
+        std::vector<TestData> expected{ {"5 + true;","Type mismatch: int + bool"}, {"5 + true; 5;", "Type mismatch: int + bool"},
+            {"-true", "No Prefix (-) Evaluator for: bool"}, {"true + false;", "bool doesn't support : +"},
+            {"5; true + false; 5;", "bool doesn't support : +"}, {"if(10 > 1) {true + false;}", "bool doesn't support : +"},
+            {"if(10 > 1) { if(10 < 1){return true + false;} return 1 + false;}", "Type mismatch: int + bool"} };
+
+        for (const auto& testData : expected)
+        {
+            const auto program{ test::CreateProgramFromString(testData.input) };
+            for (const auto& statement : program->mStatements)
+            {
+                const auto val{ Evaluator::Evaluate(statement.get()) };
+                if (val->Type() == ObjectTypes::ERROR_OBJECT)
+                {
+                    if (const auto err{ dynamic_cast<ErrorType*>(val.get()) })
+                    {
+                        REQUIRE(testData.expected == err->mMessage);
+                    }
+                }
+            }
         }
     }
 
