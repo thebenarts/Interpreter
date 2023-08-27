@@ -110,6 +110,38 @@ namespace interpreter::Evaluator
         return nullptr;
     }
 
+    ObjectSharedPtr EvaluateProgram(const ast::Program& program)
+    {
+        // we want to hold onto result since even if it's not explicit we want to return the last result.
+        ObjectSharedPtr result;
+        for (const auto& statement : program.mStatements)
+        {
+            if (result = Evaluate(statement.get()))
+            {
+                if (result->Type() == ObjectTypes::RETURN_OBJECT)
+                {
+                    if (const auto returnResult{ dynamic_cast<ReturnType*>(result.get()) })
+                    {
+                        return returnResult->mValue;
+                    }
+                    return NEW_ERROR("Object type didn't match expected type : ", result->Type());
+                }
+                else if (result->Type() == ObjectTypes::ERROR_OBJECT)
+                {
+                    // Probably pointless check, but for now it's safer to check.
+                    if (const auto error{ dynamic_cast<ErrorType*>(result.get()) }; !error)
+                    {
+                        return NEW_ERROR("Object type didn't match expected type : ", result->Type());
+                    }
+
+                    return result;
+                }
+            }
+        }
+
+        return result;
+    }
+
     ObjectSharedPtr EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right)
     {
         switch (operatorToken)
@@ -296,38 +328,6 @@ namespace interpreter::Evaluator
         }
 
         return GetNativeNullObject();
-    }
-
-    ObjectSharedPtr EvaluateProgram(const ast::Program& program)
-    {
-        // we want to hold onto result since even if it's not explicit we want to return the last result.
-        ObjectSharedPtr result;
-        for (const auto& statement : program.mStatements)
-        {
-            if (result = Evaluate(statement.get()))
-            {
-                if (result->Type() == ObjectTypes::RETURN_OBJECT)
-                {
-                    if (const auto returnResult{ dynamic_cast<ReturnType*>(result.get()) })
-                    {
-                        return returnResult->mValue;
-                    }
-                    return NEW_ERROR("Object type didn't match expected type : ", result->Type());
-                }
-                else if (result->Type() == ObjectTypes::ERROR_OBJECT)
-                {
-                    // Probably pointless check, but for now it's safer to check.
-                    if (const auto error{ dynamic_cast<ErrorType*>(result.get()) }; !error)
-                    {
-                        return NEW_ERROR("Object type didn't match expected type : ", result->Type());
-                    }
-
-                    return result;
-                }
-            }
-        }
-
-        return result;
     }
 
     bool IsTruthy(const ObjectSharedPtr& object)

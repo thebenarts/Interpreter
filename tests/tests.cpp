@@ -895,16 +895,17 @@ namespace interpreter
         for (const auto& testData : expected)
         {
             const auto program{ test::CreateProgramFromString(testData.input) };
-            for (const auto& statement : program->mStatements)
+            const auto val{ Evaluator::EvaluateProgram(*program.get()) };
+            if (val->Type() == ObjectTypes::ERROR_OBJECT)
             {
-                const auto val{ Evaluator::Evaluate(statement.get()) };
-                if (val->Type() == ObjectTypes::ERROR_OBJECT)
+                if (const auto err{ dynamic_cast<ErrorType*>(val.get()) })
                 {
-                    if (const auto err{ dynamic_cast<ErrorType*>(val.get()) })
-                    {
-                        REQUIRE(testData.expected == err->mMessage);
-                    }
+                    REQUIRE(testData.expected == err->mMessage);
                 }
+            }
+            else
+            {
+                LOG(MessageType::WARNING, "not an error object returned : ", val->Inspect());
             }
         }
     }

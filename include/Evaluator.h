@@ -1,4 +1,10 @@
 #pragma once
+#ifdef INTERPRETER_DLL_EXPORT
+#define INTERPRETER_DLL __declspec(dllexport)
+#else
+#define INTERPRETER_DLL __declspec(dllimport)
+#endif
+
 #include "ForwardDeclares.h"
 
 namespace interpreter
@@ -12,6 +18,7 @@ namespace interpreter
     namespace Evaluator
     {
         ObjectSharedPtr Evaluate(ast::Node* node);
+        ObjectSharedPtr EvaluateProgram(const ast::Program& program);
 
         ObjectSharedPtr EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right);
         ObjectSharedPtr EvaluatePrefixBangOperatorExpression(const ObjectSharedPtr& right);
@@ -20,7 +27,6 @@ namespace interpreter
         ObjectSharedPtr EvaluateInfixIntegerExpression(TokenType operatorToken, const ObjectSharedPtr& left, const ObjectSharedPtr& right);
         ObjectSharedPtr EvaluateIfExpression(const ast::IfExpression& ifExpression);
         ObjectSharedPtr EvaluateConditionBlockStatement(const ast::ConditionBlockStatement& statement);
-        ObjectSharedPtr EvaluateProgram(const ast::Program& program);
         ObjectSharedPtr EvaluateBlockStatement(const ast::BlockStatement& statement);
 
         bool IsTruthy(const ObjectSharedPtr& obj);

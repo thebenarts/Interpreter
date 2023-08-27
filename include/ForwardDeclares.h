@@ -8,24 +8,24 @@ namespace interpreter
 {
     class Lexer;
     class Parser;
-    class Token;
-    class Message;
-    class Object;
+    struct Token;
+    struct Message;
+    struct Object;
 
     namespace ast
     {
-        class Expression;
-        class Statement;
-        class LetStatement;
-        class ReturnStatement;
-        class ExpressionStatement;
-        class BlockStatement;
-        class ConditionBlockStatement;
-        class Expression;
-        class PrimitiveExpression;
-        class InfixExpression;
-        class IfExpression;
-        class Program;
+        struct Expression;
+        struct Statement;
+        struct LetStatement;
+        struct ReturnStatement;
+        struct ExpressionStatement;
+        struct BlockStatement;
+        struct ConditionBlockStatement;
+        struct Expression;
+        struct PrimitiveExpression;
+        struct InfixExpression;
+        struct IfExpression;
+        struct Program;
     }
 
     typedef int16_t CharacterRange;
@@ -46,6 +46,7 @@ namespace interpreter
     typedef std::unique_ptr<ast::InfixExpression> InfixExpressionUniquePtr;
     typedef std::unique_ptr<ast::IfExpression> IfExpressionUniquePtr;
     typedef std::unique_ptr<ast::Program> ProgramUniquePtr;
+
     typedef std::unique_ptr<Object> ObjectUniquePtr;
     typedef std::shared_ptr<Object> ObjectSharedPtr;
 
