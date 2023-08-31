@@ -765,17 +765,13 @@ namespace interpreter
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
-
-        const auto testEval = [](ast::Node* statement) -> ObjectSharedPtr
-        {
-            return Evaluator::Evaluate(statement);
-        };
+        const auto env{ Environment::NewEnvironment() };
 
         std::vector<int> expectedVal{ 5, 101, -3, -104 , 10 , 32, 0, 20, 25, 0, 60, 30, 37,  37, 50 };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ testEval(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get(), env) };
             TestIntegerObject(val, expectedVal[i]);
         }
     }
@@ -800,12 +796,13 @@ namespace interpreter
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+        const auto env{ Environment::NewEnvironment() };
 
         std::vector<bool> expectedVal{ true, false, true, false, false, false, true, false, false, true };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ Evaluator::Evaluate(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get(), env) };
             TestBoolObject(val, expectedVal[i]);
         }
     }
@@ -816,6 +813,7 @@ namespace interpreter
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+        const auto env{ Environment::NewEnvironment() };
 
         //true == true;
         //false == false;
@@ -832,7 +830,7 @@ namespace interpreter
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ Evaluator::Evaluate(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get(),env) };
             TestBoolObject(val, expectedVal[i]);
         }
     }
@@ -843,12 +841,13 @@ namespace interpreter
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+        const auto env{ Environment::NewEnvironment() };
 
         std::vector<Number> expectedVal{ 5,10,-5,-10 , 9223372036854775807, -9223372036854775807 };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ Evaluator::Evaluate(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get(), env) };
             TestIntegerObject(val, expectedVal[i]);
         }
     }
@@ -869,12 +868,13 @@ namespace interpreter
         interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+        const auto env{ Environment::NewEnvironment() };
 
         std::vector<bool> expectedVal{ true, false, false, true, false, true, false, false, true };
         for (int i = 0; i != expectedVal.size(); i++)
         {
             const auto& statement{ program->mStatements[i] };
-            const auto val{ Evaluator::Evaluate(statement.get()) };
+            const auto val{ Evaluator::Evaluate(statement.get(), env) };
             TestBoolObject(val, expectedVal[i]);
         }
     }
@@ -895,7 +895,8 @@ namespace interpreter
         for (const auto& testData : expected)
         {
             const auto program{ test::CreateProgramFromString(testData.input) };
-            const auto val{ Evaluator::EvaluateProgram(*program.get()) };
+            const auto env{ Environment::NewEnvironment() };
+            const auto val{ Evaluator::EvaluateProgram(*program.get(), env) };
             if (val->Type() == ObjectTypes::ERROR_OBJECT)
             {
                 if (const auto err{ dynamic_cast<ErrorType*>(val.get()) })

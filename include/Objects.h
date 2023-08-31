@@ -83,6 +83,16 @@ namespace interpreter
         std::string mMessage;
     };
 
+    struct Environment : public std::unordered_map<std::string, ObjectSharedPtr>
+    {
+        static EnvironmentSharedPtr NewEnvironment();
+
+        ObjectSharedPtr Get(std::string_view key) const;
+        ObjectSharedPtr Set(std::string_view key, ObjectSharedPtr&& obj);
+
+        EnvironmentSharedPtr mOuter;
+    };
+
     template<typename... T>
     std::shared_ptr<ErrorType> NewError(MessageType type, std::source_location location, const T&... args)
     {

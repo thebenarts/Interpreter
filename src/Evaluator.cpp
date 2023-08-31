@@ -5,7 +5,7 @@
 
 namespace interpreter::Evaluator
 {
-    ObjectSharedPtr Evaluate(ast::Node* node)
+    ObjectSharedPtr Evaluate(ast::Node* node, const EnvironmentSharedPtr& env)
     {
         VERIFY(node);   // To catch issues.
 
@@ -22,28 +22,28 @@ namespace interpreter::Evaluator
             // TODOBB: these could be changed to static casts as we hold metadata, but keeping them dynamic for a bit to make sure everything works
             if (const auto expressionStatement{ dynamic_cast<ast::ExpressionStatement*>(node) })
             {
-                return Evaluate(expressionStatement->mValue.get());
+                return Evaluate(expressionStatement->mValue.get(), env);
             }
             assert(false);
             break;
         case ast::NodeType::ConditionBlockStatement:
             if (const auto conditionBlockStatement{ dynamic_cast<ast::ConditionBlockStatement*>(node) })
             {
-                return EvaluateConditionBlockStatement(*conditionBlockStatement);
+                return EvaluateConditionBlockStatement(*conditionBlockStatement, env);
             }
             ASSERT_MESSAGE(false, MessageType::ERRORS, "Statement wasn't ConditionBlockStatement");
             break;
         case ast::NodeType::BlockStatement:
             if (const auto blockStatement{ dynamic_cast<ast::BlockStatement*>(node) })
             {
-                return EvaluateBlockStatement(*blockStatement);
+                return EvaluateBlockStatement(*blockStatement, env);
             }
             ASSERT_MESSAGE(false, MessageType::ERRORS, "Statement wasn't BlockStatement");
             break;
         case ast::NodeType::ReturnStatement:
             if (const auto returnStatement{ dynamic_cast<ast::ReturnStatement*>(node) })
             {
-                if (const auto returnValue{ Evaluate(returnStatement->mValue.get()) })
+                if (const auto returnValue{ Evaluate(returnStatement->mValue.get(), env) })
                 {
                     return IsError(returnValue) ? returnValue : std::make_shared<ReturnType>(returnValue);
                 }
@@ -54,7 +54,7 @@ namespace interpreter::Evaluator
         case ast::NodeType::Program:
             if (const auto program{ dynamic_cast<ast::Program*>(node) })
             {
-                return EvaluateProgram(*program);
+                return EvaluateProgram(*program, env);
             }
             ASSERT_MESSAGE(false, MessageType::ERRORS, "Statement wasn't Program");
             break;
@@ -74,20 +74,20 @@ namespace interpreter::Evaluator
                 else if (expression->mExpressionType == ast::ExpressionType::PrefixExpression)
                 {
                     const auto prefixExpression{ dynamic_cast<ast::PrefixExpression*>(expression) };
-                    const auto right{ Evaluate(prefixExpression->mRightSideValue.get()) };
+                    const auto right{ Evaluate(prefixExpression->mRightSideValue.get(), env) };
                     return IsError(right) ? right : EvaluatePrefixExpression(prefixExpression->mOperator.mType, right);
                 }
                 else if (expression->mExpressionType == ast::ExpressionType::InfixExpression)
                 {
                     const auto infixExpression{ dynamic_cast<ast::InfixExpression*>(expression) };
 
-                    const auto left{ Evaluate(infixExpression->mLeftExpression.get()) };
+                    const auto left{ Evaluate(infixExpression->mLeftExpression.get(), env) };
                     if (IsError(left))
                     {
                         return left;
                     }
 
-                    const auto right{ Evaluate(infixExpression->mRightExpression.get()) };
+                    const auto right{ Evaluate(infixExpression->mRightExpression.get(), env) };
                     if (IsError(right))
                     {
                         return right;
@@ -98,7 +98,7 @@ namespace interpreter::Evaluator
                 else if (expression->mExpressionType == ast::ExpressionType::IfExpression)
                 {
                     const auto ifExpression{ dynamic_cast<ast::IfExpression*>(expression) };
-                    return EvaluateIfExpression(*ifExpression);
+                    return EvaluateIfExpression(*ifExpression, env);
                 }
             }
             break;
@@ -110,13 +110,13 @@ namespace interpreter::Evaluator
         return nullptr;
     }
 
-    ObjectSharedPtr EvaluateProgram(const ast::Program& program)
+    ObjectSharedPtr EvaluateProgram(const ast::Program& program, const EnvironmentSharedPtr& env)
     {
         // we want to hold onto result since even if it's not explicit we want to return the last result.
         ObjectSharedPtr result;
         for (const auto& statement : program.mStatements)
         {
-            if (result = Evaluate(statement.get()))
+            if (result = Evaluate(statement.get(), env))
             {
                 if (result->Type() == ObjectTypes::RETURN_OBJECT)
                 {
@@ -141,6 +141,71 @@ namespace interpreter::Evaluator
 
         return result;
     }
+
+    ObjectSharedPtr EvaluateIfExpression(const ast::IfExpression& ifExpression, const EnvironmentSharedPtr& env)
+    {
+        // Check the if statement
+        if (const auto ifBlockResult{ Evaluate(ifExpression.mIfConditionBlock.get(), env) })
+        {
+            return ifBlockResult;
+        }
+
+        // Check the else if branches
+        for (const auto& elseIfConditionBlock : ifExpression.mElseIfBlocks)
+        {
+            if (const auto optionalBlockResult{ Evaluate(elseIfConditionBlock.get(), env) })
+            {
+                return optionalBlockResult;
+            }
+        }
+
+        // return the else branch
+        if (ifExpression.mAlternative)
+        {
+            if (const auto elseBlockResult{ Evaluate(ifExpression.mAlternative.get(), env) })
+            {
+                return elseBlockResult;
+            }
+        }
+
+        return GetNativeNullObject();
+    }
+
+    ObjectSharedPtr EvaluateConditionBlockStatement(const ast::ConditionBlockStatement& statement, const EnvironmentSharedPtr& env)
+    {
+        if (statement.mCondition)
+        {
+            if (const auto condition{ Evaluate(statement.mCondition.get(), env) })
+            {
+                if (IsError(condition))
+                {
+                    return condition;
+                }
+
+                if (IsTruthy(condition))
+                {
+                    const auto blockResult{ Evaluate(statement.mBlock.get(), env) };
+                    return blockResult ? blockResult : GetNativeNullObject();
+                }
+            }
+        }
+
+        return GetNativeNullObject();
+    }
+
+    ObjectSharedPtr EvaluateBlockStatement(const ast::BlockStatement& statement, const EnvironmentSharedPtr& env)
+    {
+        for (const auto& statement : statement.mStatements)
+        {
+            if (const auto result{ Evaluate(statement.get(), env) }; result && (result->Type() == ObjectTypes::RETURN_OBJECT || result->Type() == ObjectTypes::ERROR_OBJECT))
+            {
+                return result;
+            }
+        }
+
+        return GetNativeNullObject();
+    }
+
 
     ObjectSharedPtr EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right)
     {
@@ -260,70 +325,6 @@ namespace interpreter::Evaluator
                 return GetNativeBoolObject(leftInt->mValue != rightInt->mValue);
             default:
                 return NEW_ERROR("Operator : ", operatorToken, " not supported by Number types.");
-            }
-        }
-
-        return GetNativeNullObject();
-    }
-
-    ObjectSharedPtr EvaluateIfExpression(const ast::IfExpression& ifExpression)
-    {
-        // Check the if statement
-        if (const auto ifBlockResult{ Evaluate(ifExpression.mIfConditionBlock.get()) })
-        {
-            return ifBlockResult;
-        }
-
-        // Check the else if branches
-        for (const auto& elseIfConditionBlock : ifExpression.mElseIfBlocks)
-        {
-            if (const auto optionalBlockResult{ Evaluate(elseIfConditionBlock.get()) })
-            {
-                return optionalBlockResult;
-            }
-        }
-
-        // return the else branch
-        if (ifExpression.mAlternative)
-        {
-            if (const auto elseBlockResult{ Evaluate(ifExpression.mAlternative.get()) })
-            {
-                return elseBlockResult;
-            }
-        }
-
-        return GetNativeNullObject();
-    }
-
-    ObjectSharedPtr EvaluateConditionBlockStatement(const ast::ConditionBlockStatement& statement)
-    {
-        if (statement.mCondition)
-        {
-            if (const auto condition{ Evaluate(statement.mCondition.get()) })
-            {
-                if (IsError(condition))
-                {
-                    return condition;
-                }
-
-                if (IsTruthy(condition))
-                {
-                    const auto blockResult{ Evaluate(statement.mBlock.get()) };
-                    return blockResult ? blockResult : GetNativeNullObject();
-                }
-            }
-        }
-
-        return GetNativeNullObject();
-    }
-
-    ObjectSharedPtr EvaluateBlockStatement(const ast::BlockStatement& statement)
-    {
-        for (const auto& statement : statement.mStatements)
-        {
-            if (const auto result{ Evaluate(statement.get()) }; result && (result->Type() == ObjectTypes::RETURN_OBJECT || result->Type() == ObjectTypes::ERROR_OBJECT))
-            {
-                return result;
             }
         }
 

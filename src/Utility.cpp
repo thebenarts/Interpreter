@@ -1,4 +1,5 @@
 #include "Utility.h"
+#include "Parser.h"
 #include <iostream>
 #include <sstream>
 
@@ -6,6 +7,21 @@ namespace interpreter
 {
     namespace utility
     {
+        ProgramUniquePtr CreateProgramFromText(std::string_view text)
+        {
+            interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(text) };
+            interpreter::Parser parser{ std::move(lexer) };
+            return parser.ParseProgram();
+        }
+
+        ProgramUniquePtr CreateProgramFromFile(std::string_view path)
+        {
+            std::string parserInput{ interpreter::utility::ReadTextFile(path) };
+            interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
+            interpreter::Parser parser{ std::move(lexer) };
+            return  parser.ParseProgram();
+        }
+
         bool IsLetter(char character)
         {
             return ('a' <= character && character <= 'z') || ('A' <= character && character <= 'Z') || character == '_';
@@ -86,26 +102,26 @@ namespace interpreter
                 std::cout << "ERROR: Token Literals hold different types of values." << std::endl;
 
                 return false;
-            }
+                }
 
-            if (leftIsString)
-            {
-                const auto leftValue{ std::get<std::string>(left.mLiteral) };
-                const auto rightValue{ std::get<std::string>(right.mLiteral) };
-                VERIFY(leftValue == rightValue) {}
-            else
-            {
-                std::cout << "ERROR: Token values are not the same: " << leftValue <<
-                    " : " << rightValue << std::endl;
+                if (leftIsString)
+                {
+                    const auto leftValue{ std::get<std::string>(left.mLiteral) };
+                    const auto rightValue{ std::get<std::string>(right.mLiteral) };
+                    VERIFY(leftValue == rightValue) {}
+                else
+                {
+                    std::cout << "ERROR: Token values are not the same: " << leftValue <<
+                        " : " << rightValue << std::endl;
 
-                return false;
-            }
-            }
-            else
-            {
-                const auto leftValue{ std::get<Number>(left.mLiteral) };
-                const auto rightValue{ std::get<Number>(right.mLiteral) };
-                VERIFY(leftValue == rightValue) {}
+                    return false;
+                }
+                }
+                else
+                {
+                    const auto leftValue{ std::get<Number>(left.mLiteral) };
+                    const auto rightValue{ std::get<Number>(right.mLiteral) };
+                    VERIFY(leftValue == rightValue) {}
                 else
                 {
                     std::cout << "ERROR: Token values are not the same: " << leftValue <<
@@ -113,9 +129,9 @@ namespace interpreter
 
                     return false;
                     }
-            }
+                }
 
-            return true;
+                return true;
         }
 
         std::string ConvertTokenTypeToString(TokenType tokenType)

@@ -22,11 +22,12 @@ int main()
         interpreter::LexerUniquePtr lexer{ std::make_unique<interpreter::Lexer>(input) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
+        const auto env{ interpreter::Environment::NewEnvironment() };
         for (const auto& node : program->mStatements)
         {
             if (node)
             {
-                const auto object{ interpreter::Evaluator::Evaluate(node.get()) };
+                const auto object{ interpreter::Evaluator::Evaluate(node.get(), env) };
                 if (object)
                 {
                     interpreter::LOG_MESSAGE(object->Inspect());

@@ -71,4 +71,31 @@ namespace interpreter
     {
         return mMessage;
     };
+
+    // ------------------------------------------------------------ Error Type -----------------------------------------------------
+
+    EnvironmentSharedPtr Environment::NewEnvironment()
+    {
+        return std::make_shared<Environment>();
+    }
+
+    ObjectSharedPtr Environment::Get(std::string_view key) const
+    {
+        if (const auto iterator{ find(key.data()) }; iterator != end())
+        {
+            return iterator->second;
+        }
+        else if (mOuter)
+        {
+            return mOuter->Get(key);
+        }
+
+        return nullptr;
+    }
+
+    ObjectSharedPtr Environment::Set(std::string_view key, ObjectSharedPtr&& obj)
+    {
+        const auto pair{ insert_or_assign(key.data(),std::move(obj)) };
+        return pair.first->second;
+    }
 }

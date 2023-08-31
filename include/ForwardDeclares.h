@@ -11,6 +11,7 @@ namespace interpreter
     struct Token;
     struct Message;
     struct Object;
+    struct Environment;
 
     namespace ast
     {
@@ -49,6 +50,8 @@ namespace interpreter
 
     typedef std::unique_ptr<Object> ObjectUniquePtr;
     typedef std::shared_ptr<Object> ObjectSharedPtr;
+
+    typedef std::shared_ptr<Environment> EnvironmentSharedPtr;
 
     typedef std::unique_ptr<Lexer> LexerUniquePtr;
     typedef std::unique_ptr<Parser> ParserUniquePtr;
