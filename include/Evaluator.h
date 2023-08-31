@@ -25,6 +25,7 @@ namespace interpreter
         ObjectSharedPtr EvaluateConditionBlockStatement(const ast::ConditionBlockStatement& statement, const EnvironmentSharedPtr& env);
         ObjectSharedPtr EvaluateBlockStatement(const ast::BlockStatement& statement, const EnvironmentSharedPtr& env);
 
+        ObjectSharedPtr EvaluateIdentifier(const ast::PrimitiveExpression& primitive, const EnvironmentSharedPtr& env);
         ObjectSharedPtr EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right);
         ObjectSharedPtr EvaluatePrefixBangOperatorExpression(const ObjectSharedPtr& right);
         ObjectSharedPtr EvaluatePrefixMinusOperatorExpression(const ObjectSharedPtr& right);

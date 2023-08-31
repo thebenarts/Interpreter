@@ -88,7 +88,7 @@ namespace interpreter
         static EnvironmentSharedPtr NewEnvironment();
 
         ObjectSharedPtr Get(std::string_view key) const;
-        ObjectSharedPtr Set(std::string_view key, ObjectSharedPtr&& obj);
+        ObjectSharedPtr Set(std::string_view key, const ObjectSharedPtr&& obj);
 
         EnvironmentSharedPtr mOuter;
     };

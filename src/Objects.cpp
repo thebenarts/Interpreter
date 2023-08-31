@@ -93,7 +93,7 @@ namespace interpreter
         return nullptr;
     }
 
-    ObjectSharedPtr Environment::Set(std::string_view key, ObjectSharedPtr&& obj)
+    ObjectSharedPtr Environment::Set(std::string_view key, const ObjectSharedPtr&& obj)
     {
         const auto pair{ insert_or_assign(key.data(),std::move(obj)) };
         return pair.first->second;

@@ -911,4 +911,31 @@ namespace interpreter
         }
     }
 
+    TEST_CASE("EvalLetStatements")
+    {
+        struct TestData
+        {
+            std::string input;
+            Number expected;
+        };
+
+        std::vector<TestData> expected{ {"let a = 5; a;", 5}, {"let a = 5 * 5; a;", 25},
+            {"let a = 5; let b = a; b;", 5}, {"let a = 5; let b = a; let c = a + b + 5; c;", 15} };
+
+        for (const auto& test : expected)
+        {
+            const auto program{ test::CreateProgramFromString(test.input) };
+            const auto env{ Environment::NewEnvironment() };
+            const auto val{ Evaluator::EvaluateProgram(*program.get(), env) };
+            if (val->Type() == ObjectTypes::INTEGER_OBJECT)
+            {
+                TestIntegerObject(val, test.expected);
+            }
+            else 
+            {
+                LOG(MessageType::WARNING, "not an integer object returned : ", val->Inspect());
+            }
+        }
+    }
+
 }

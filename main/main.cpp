@@ -16,26 +16,23 @@ int main()
     std::string input;
     interpreter::Logger::SetLoggerSeverity(interpreter::MessageType::WARNING);
     std::cout << "Current Path is " << std::filesystem::current_path() << '\n';
+    const auto env{ interpreter::Environment::NewEnvironment() };
 
     while (std::getline(std::cin, input))
     {
         interpreter::LexerUniquePtr lexer{ std::make_unique<interpreter::Lexer>(input) };
         interpreter::Parser parser{ std::move(lexer) };
         interpreter::ProgramUniquePtr program{ parser.ParseProgram() };
-        const auto env{ interpreter::Environment::NewEnvironment() };
-        for (const auto& node : program->mStatements)
+        if (program)
         {
-            if (node)
+            const auto object{ interpreter::Evaluator::EvaluateProgram(*program.get(), env) };
+            if (object)
             {
-                const auto object{ interpreter::Evaluator::Evaluate(node.get(), env) };
-                if (object)
-                {
-                    interpreter::LOG_MESSAGE(object->Inspect());
-                }
+                interpreter::LOG_MESSAGE(object->Inspect());
             }
         }
-        //interpreter::LOG_MESSAGE(program.get());
     }
+    //interpreter::LOG_MESSAGE(program.get());
 
     return 0;
 }

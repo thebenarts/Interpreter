@@ -56,6 +56,7 @@ namespace interpreter
         ProgramUniquePtr CreateProgramFromText(std::string_view text);
         ProgramUniquePtr CreateProgramFromFile(std::string_view path);
 
+        std::string GetAndValidateIdentifierIsFree(ast::Expression& expression, const EnvironmentSharedPtr& env);
         bool IsLetter(char character);
         bool IsDigit(char character);
         Number ToNumber(std::string_view literal);

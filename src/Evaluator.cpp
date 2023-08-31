@@ -26,6 +26,28 @@ namespace interpreter::Evaluator
             }
             assert(false);
             break;
+        case ast::NodeType::LetStatement:
+            if (const auto letStatement{ dynamic_cast<ast::LetStatement*>(node) })
+            {
+                const auto value{ Evaluate(letStatement->mValue.get(),env) };
+                if (IsError(value))
+                {
+                    return value;
+                }
+
+                VERIFY(letStatement->mIdentifier)
+                {
+                    if (const auto identifier{ utility::GetAndValidateIdentifierIsFree(*letStatement->mIdentifier.get(),env) }; !identifier.empty())
+                    {
+                        env->Set(identifier, std::move(value));
+                    }
+                }
+            }
+            else
+            {
+                assert(false);
+            }
+            break;
         case ast::NodeType::ConditionBlockStatement:
             if (const auto conditionBlockStatement{ dynamic_cast<ast::ConditionBlockStatement*>(node) })
             {
@@ -65,6 +87,12 @@ namespace interpreter::Evaluator
                 {
                     const auto primitive{ GetAndValidateTokenPrimtive(expression) };
                     return std::make_shared<IntegerType>(std::get<Number>(primitive));
+                }
+                else if (expression->mExpressionType == ast::ExpressionType::IdentifierExpression)
+                {
+                    const auto primitiveExpression{ dynamic_cast<ast::PrimitiveExpression*>(expression) };
+                    ASSERT_MESSAGE(primitiveExpression, MessageType::ERRORS, "Expression wasn't primitive expression");
+                    return EvaluateIdentifier(*primitiveExpression, env);
                 }
                 else if (expression->mExpressionType == ast::ExpressionType::BooleanExpression)
                 {
@@ -206,6 +234,17 @@ namespace interpreter::Evaluator
         return GetNativeNullObject();
     }
 
+    ObjectSharedPtr EvaluateIdentifier(const ast::PrimitiveExpression& primitive, const EnvironmentSharedPtr& env)
+    {
+        assert(primitive.mToken.mType == TokenType::IDENT);
+        const auto& identifier{ std::get<std::string>(primitive.mToken.mLiteral) };
+        if (const auto associatedObject{ env->Get(identifier) })
+        {
+            return associatedObject;
+        }
+
+        return NEW_ERROR("Identifier not found: ", identifier);
+    }
 
     ObjectSharedPtr EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right)
     {
@@ -217,7 +256,7 @@ namespace interpreter::Evaluator
         case TokenType::MINUS:  // "-"
             return EvaluatePrefixMinusOperatorExpression(right);
         }
-        return NEW_ERROR("Prefix operator not supported: (",operatorToken,")");
+        return NEW_ERROR("Prefix operator not supported: (", operatorToken, ")");
     }
 
     ObjectSharedPtr EvaluatePrefixBangOperatorExpression(const ObjectSharedPtr& right)

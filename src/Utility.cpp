@@ -1,5 +1,6 @@
 #include "Utility.h"
 #include "Parser.h"
+#include "Objects.h"
 #include <iostream>
 #include <sstream>
 
@@ -20,6 +21,23 @@ namespace interpreter
             interpreter::LexerUniquePtr lexer{ std::make_unique<Lexer>(parserInput) };
             interpreter::Parser parser{ std::move(lexer) };
             return  parser.ParseProgram();
+        }
+
+        std::string GetAndValidateIdentifierIsFree(ast::Expression& expression, const EnvironmentSharedPtr& env)
+        {
+            assert(expression.mExpressionType == ast::ExpressionType::IdentifierExpression);
+            if (const auto token{ expression.TokenNode() })
+            {
+                assert(token->mType == TokenType::IDENT);
+                std::string_view identifier{ std::get<std::string>(token->mLiteral) };
+                if (const auto object{ env->Get(identifier) })
+                {
+                    LOG(ERRORS, "Identifier: ", identifier, " already exists in environment with value: ", object->Inspect());
+                }
+                return std::string{ identifier };
+            }
+
+            return {};
         }
 
         bool IsLetter(char character)
@@ -91,12 +109,12 @@ namespace interpreter
                     << ConvertTokenTypeToString(right.mType) << std::endl;
 
                 return false;
-            }
+                }
 
-            bool leftIsString{ std::holds_alternative<std::string>(left.mLiteral) };
-            bool rightIsString{ std::holds_alternative<std::string>(right.mLiteral) };
+                bool leftIsString{ std::holds_alternative<std::string>(left.mLiteral) };
+                bool rightIsString{ std::holds_alternative<std::string>(right.mLiteral) };
 
-            VERIFY(leftIsString == rightIsString) {}
+                VERIFY(leftIsString == rightIsString) {}
             else
             {
                 std::cout << "ERROR: Token Literals hold different types of values." << std::endl;
