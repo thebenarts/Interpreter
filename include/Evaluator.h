@@ -25,6 +25,10 @@ namespace interpreter
         ObjectSharedPtr EvaluateConditionBlockStatement(const ast::ConditionBlockStatement& statement, const EnvironmentSharedPtr& env);
         ObjectSharedPtr EvaluateBlockStatement(const ast::BlockStatement& statement, const EnvironmentSharedPtr& env);
 
+        std::vector<ObjectSharedPtr> EvaluateExpressions(const std::vector<ExpressionUniquePtr>& expressions, const EnvironmentSharedPtr& env);
+        ObjectSharedPtr ApplyFunction(const ObjectSharedPtr& function, std::vector<ObjectSharedPtr>&& arguments);
+        EnvironmentSharedPtr ExtendFunctionEnvironment(const FunctionType& function, std::vector<ObjectSharedPtr>&& arguments);
+
         ObjectSharedPtr EvaluateIdentifier(const ast::PrimitiveExpression& primitive, const EnvironmentSharedPtr& env);
         ObjectSharedPtr EvaluatePrefixExpression(TokenType operatorToken, const ObjectSharedPtr& right);
         ObjectSharedPtr EvaluatePrefixBangOperatorExpression(const ObjectSharedPtr& right);
@@ -34,6 +38,8 @@ namespace interpreter
 
         bool IsTruthy(const ObjectSharedPtr& obj);
         bool IsError(const ObjectSharedPtr& obj);
+
+        ObjectSharedPtr UnwrapReturnValue(const ObjectSharedPtr& object);
 
         // Static objects
         ObjectSharedPtr GetNativeBoolObject(bool value);

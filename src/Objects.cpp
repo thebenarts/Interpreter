@@ -72,11 +72,45 @@ namespace interpreter
         return mMessage;
     };
 
-    // ------------------------------------------------------------ Error Type -----------------------------------------------------
+    // ------------------------------------------------------------ Function Type -----------------------------------------------------
+
+    ObjectType FunctionType::Type() const
+    {
+        return ObjectTypes::FUNCTION_OBJECT;
+    };
+
+    std::string FunctionType::Inspect() const
+    {
+        std::ostringstream stream;
+        stream << "fn (";
+        for (int i = 0; i != mParameters.size(); i++)
+        {
+            if (const auto & parameter{ mParameters[i] })
+            {
+                stream << parameter->Log();
+                if (i != mParameters.size() - 1)
+                {
+                    stream << ", ";
+                }
+            }
+        }
+        stream << ")\n{\n\t" << mBody->Log() << "\n}";
+
+        return stream.str();
+    };
+
+    // ------------------------------------------------------------ Environment -----------------------------------------------------
 
     EnvironmentSharedPtr Environment::NewEnvironment()
     {
         return std::make_shared<Environment>();
+    }
+
+    EnvironmentSharedPtr Environment::NewEnclosedEnvironment(EnvironmentSharedPtr outer)
+    {
+        const auto env{ NewEnvironment() };
+        env->mOuter = outer;
+        return env;
     }
 
     ObjectSharedPtr Environment::Get(std::string_view key) const

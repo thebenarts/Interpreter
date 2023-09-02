@@ -133,6 +133,44 @@ namespace interpreter {
             return result.str();
         }
 
+        std::optional<std::string> PrimitiveExpression::GetIdentifier()
+        {
+            VERIFY(mExpressionType == ExpressionType::IdentifierExpression)
+            {
+                return Log();
+            }
+
+            return {};
+        }
+
+        std::optional<Number> PrimitiveExpression::GetNumber()
+        {
+            VERIFY(mExpressionType == ExpressionType::IntegerExpression)
+            {
+                const auto tokenNode{ TokenNode() };
+                VERIFY(tokenNode)
+                {
+                    return std::get<Number>(tokenNode->mLiteral);
+                }
+            }
+
+            return {};
+        }
+
+        std::optional<bool> PrimitiveExpression::GetBool()
+        {
+            VERIFY(mExpressionType == ExpressionType::BooleanExpression)
+            {
+                const auto tokenNode{ TokenNode() };
+                VERIFY(tokenNode)
+                {
+                    return std::get<bool>(tokenNode->mLiteral);
+                }
+            }
+
+            return {};
+        }
+
         // ------------------------------------------------------------ Prefix Expression -----------------------------------------------------
 
         std::optional<Token> PrefixExpression::TokenNode() { return mToken; }
@@ -166,7 +204,7 @@ namespace interpreter {
             result << "(";
             VERIFY(mLeftExpression);
             result << mLeftExpression->Log();
-            result << " " <<  mToken << " ";
+            result << " " << mToken << " ";
 
             if (mRightExpression)
             {
@@ -225,7 +263,7 @@ namespace interpreter {
 
             for (int i = 0; i != mParameters.size(); i++)
             {
-                if (const auto& parameter{ mParameters[i] })
+                if (const auto & parameter{ mParameters[i] })
                 {
                     result << parameter->Log();
                     if (i != mParameters.size() - 1)
@@ -259,7 +297,7 @@ namespace interpreter {
 
             for (int i = 0; i != mArguments.size(); i++)
             {
-                if (const auto& parameter{ mArguments[i] })
+                if (const auto & parameter{ mArguments[i] })
                 {
                     result << parameter->Log();
                     if (i != mArguments.size() - 1)

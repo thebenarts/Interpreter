@@ -160,6 +160,10 @@ namespace interpreter {
             virtual std::optional<Token> ExpressionNode() override;
             virtual std::string Log() override;
 
+            std::optional<std::string> GetIdentifier();
+            std::optional<Number> GetNumber();
+            std::optional<bool> GetBool();
+
             // Variables
             Token mToken;
         };

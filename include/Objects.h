@@ -17,6 +17,7 @@ namespace interpreter
         constexpr const char* NULL_OBJECT{ "NULL" };
         constexpr const char* RETURN_OBJECT{ "RETURN_VALUE" };
         constexpr const char* ERROR_OBJECT{ "ERROR_VALUE" };
+        constexpr const char* FUNCTION_OBJECT{ "FUNCTION" };
     }
 
     struct Object
@@ -83,9 +84,23 @@ namespace interpreter
         std::string mMessage;
     };
 
+    struct FunctionType : public Object
+    {
+        FunctionType(std::vector<ExpressionUniquePtr>&& parameters, BlockStatementUniquePtr&& body, std::weak_ptr<Environment>environment) :
+            mParameters(std::move(parameters)), mBody(std::move(body)), mEnvironment(environment) {}
+
+        virtual ObjectType Type() const override;
+        virtual std::string Inspect() const override;
+
+        std::vector<ExpressionUniquePtr> mParameters;
+        BlockStatementUniquePtr mBody;
+        std::weak_ptr<Environment> mEnvironment;
+    };
+
     struct Environment : public std::unordered_map<std::string, ObjectSharedPtr>
     {
         static EnvironmentSharedPtr NewEnvironment();
+        static EnvironmentSharedPtr NewEnclosedEnvironment(EnvironmentSharedPtr outer);
 
         ObjectSharedPtr Get(std::string_view key) const;
         ObjectSharedPtr Set(std::string_view key, const ObjectSharedPtr&& obj);

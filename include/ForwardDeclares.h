@@ -3,6 +3,7 @@
 #include <memory>
 #include <variant>
 #include <string>
+#include <vector>
 
 namespace interpreter
 {
@@ -10,7 +11,14 @@ namespace interpreter
     class Parser;
     struct Token;
     struct Message;
+
     struct Object;
+    struct IntegerType;
+    struct BoolType;
+    struct NullType;
+    struct ReturnType;
+    struct ErrorType;
+    struct FunctionType;
     struct Environment;
 
     namespace ast

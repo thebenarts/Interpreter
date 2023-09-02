@@ -3,6 +3,8 @@
 #include "Token.h"
 #include "AbstractSyntaxTree.h"
 
+#include <ranges>
+
 namespace interpreter::Evaluator
 {
     ObjectSharedPtr Evaluate(ast::Node* node, const EnvironmentSharedPtr& env)
@@ -128,6 +130,32 @@ namespace interpreter::Evaluator
                     const auto ifExpression{ dynamic_cast<ast::IfExpression*>(expression) };
                     return EvaluateIfExpression(*ifExpression, env);
                 }
+                else if (expression->mExpressionType == ast::ExpressionType::FunctionExpression)
+                {
+                    // Brace yourself, let's pretend we are in Texas.
+                    const auto functionExpression{ dynamic_cast<ast::FunctionExpression*>(expression) };
+                    ASSERT_AND_RETURN(functionExpression, nullptr);
+                    return std::make_shared<FunctionType>(std::move(functionExpression->mParameters), std::move(functionExpression->mBody), env);
+                    // Let's play mine sweeper lol. We know have an ast::FunctionExpression which we shouldn't ever touch... 
+                }
+                else if (expression->mExpressionType == ast::ExpressionType::CallExpression)
+                {
+                    const auto callExpression{ dynamic_cast<ast::CallExpression*>(expression) };
+                    assert(callExpression);
+                    const auto functionObject{ Evaluate(callExpression->mFunction.get(),env) };
+                    if (IsError(functionObject))
+                    {
+                        return functionObject;
+                    }
+                    auto arguments{ EvaluateExpressions(callExpression->mArguments, env) };
+                    // Check arguments for error. If there is an error it will be the only element in the vector
+                    if (arguments.size() == 1 && IsError(arguments[0]))
+                    {
+                        return arguments[0];
+                    }
+
+                    return ApplyFunction(functionObject, std::move(arguments));
+                }
             }
             break;
         default:
@@ -164,6 +192,61 @@ namespace interpreter::Evaluator
 
                     return result;
                 }
+            }
+        }
+
+        return result;
+    }
+
+    ObjectSharedPtr ApplyFunction(const ObjectSharedPtr& function, std::vector<ObjectSharedPtr>&& arguments)
+    {
+        ASSERT_AND_RETURN((function->Type() == ObjectTypes::FUNCTION_OBJECT), (NEW_ERROR("Not a function: ", function->Type())));
+        const auto functionObject{ dynamic_cast<FunctionType*>(function.get()) };
+        if (const auto funcEnv{ functionObject->mEnvironment.lock() })
+        {
+            const auto extendedEnvironment{ ExtendFunctionEnvironment(*functionObject,std::move(arguments)) };
+            return UnwrapReturnValue(Evaluate(functionObject->mBody.get(), extendedEnvironment));
+        }
+
+        return {};
+    }
+
+    EnvironmentSharedPtr ExtendFunctionEnvironment(const FunctionType& function, std::vector<ObjectSharedPtr>&& arguments)
+    {
+        if (const auto funcEnv{ function.mEnvironment.lock() })
+        {
+            const auto env{ Environment::NewEnclosedEnvironment(funcEnv) };
+            for (uint32_t index{ 0 }; auto & param : function.mParameters)
+            {
+                if (const auto primitiveExpression{ dynamic_cast<ast::PrimitiveExpression*>(param.get()) })
+                {
+                    if (const auto optionalIdentifier{ primitiveExpression->GetIdentifier() }; optionalIdentifier && !optionalIdentifier->empty())
+                    {
+                        env->Set(*optionalIdentifier, std::move(arguments[index]));
+                    }
+                }
+                index++;
+            }
+            return env;
+        }
+        return {};
+    }
+
+    std::vector<ObjectSharedPtr> EvaluateExpressions(const std::vector<ExpressionUniquePtr>& expressions, const EnvironmentSharedPtr& env)
+    {
+        std::vector<ObjectSharedPtr> result;
+
+        for (const auto& expression : expressions)
+        {
+            const auto evaluatedObject{ Evaluate(expression.get(),env) };
+            VERIFY(evaluatedObject)
+            {
+                if (IsError(evaluatedObject))
+                {
+                    return { evaluatedObject };
+                }
+
+                result.push_back(std::move(evaluatedObject));
             }
         }
 
@@ -223,15 +306,18 @@ namespace interpreter::Evaluator
 
     ObjectSharedPtr EvaluateBlockStatement(const ast::BlockStatement& statement, const EnvironmentSharedPtr& env)
     {
+        // Errors will interrupt program flow.
+        // For now we either return 'return statement' or the last statement in the block. (might remove implicit return from if statements)
+        ObjectSharedPtr result;
         for (const auto& statement : statement.mStatements)
         {
-            if (const auto result{ Evaluate(statement.get(), env) }; result && (result->Type() == ObjectTypes::RETURN_OBJECT || result->Type() == ObjectTypes::ERROR_OBJECT))
+            if (result = Evaluate(statement.get(), env); result && (result->Type() == ObjectTypes::RETURN_OBJECT || result->Type() == ObjectTypes::ERROR_OBJECT))
             {
                 return result;
             }
         }
 
-        return GetNativeNullObject();
+        return result ? result : GetNativeNullObject();
     }
 
     ObjectSharedPtr EvaluateIdentifier(const ast::PrimitiveExpression& primitive, const EnvironmentSharedPtr& env)
@@ -413,6 +499,22 @@ namespace interpreter::Evaluator
         }
 
         return false;
+    }
+
+    ObjectSharedPtr UnwrapReturnValue(const ObjectSharedPtr& object)
+    {
+        if (object)
+        {
+            VERIFY(object->Type() == ObjectTypes::RETURN_OBJECT)
+            {
+                if (const auto returnObject{ dynamic_cast<ReturnType*>(object.get()) })
+                {
+                    return returnObject->mValue;
+                }
+            }
+        }
+
+        return object;
     }
 
     ObjectSharedPtr GetNativeBoolObject(bool value)

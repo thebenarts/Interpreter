@@ -9,6 +9,7 @@
 #include <vector>
 #include <span>
 #include <optional>
+#include <ranges>
 
 #include <fstream>
 #include <assert.h>
@@ -74,6 +75,35 @@ namespace interpreter
         std::string ReadTextFile(std::string_view fileName);
 
         std::string DeriveType(TokenPrimitive primitive);
+
+        template<typename T>
+        concept NullPtrComparable = requires(T ptr)
+        {
+            {ptr != nullptr} -> std::convertible_to<bool>;
+        };
+
+        template<typename T>
+        concept NullPtrGetComparable = requires(T ptr)
+        {
+            {ptr.get() != nullptr} -> std::convertible_to<bool>;
+        };
+
+        static inline auto NotNull = std::ranges::views::filter(
+            []<typename Value>(const Value & element)
+        {
+            if constexpr (NullPtrComparable<Value>)
+            {
+                return element != nullptr;
+            }
+            else if constexpr (NullPtrGetComparable<Value>)
+            {
+                return element.get() != nullptr;
+            }
+            else
+            {
+                static_assert(std::same_as<Value, void>, "Not a supported pointer type.");
+            }
+        });
 
         template <typename T>
         std::string TypeName()
