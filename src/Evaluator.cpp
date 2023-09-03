@@ -301,7 +301,9 @@ namespace interpreter::Evaluator
             }
         }
 
-        return GetNativeNullObject();
+        // Return regular nullptr here so in the case of if statements the execution will fallthrough and check other branches.
+        // If the condition evaluated true we will return our own null object.
+        return nullptr;
     }
 
     ObjectSharedPtr EvaluateBlockStatement(const ast::BlockStatement& statement, const EnvironmentSharedPtr& env)
@@ -348,7 +350,7 @@ namespace interpreter::Evaluator
     ObjectSharedPtr EvaluatePrefixBangOperatorExpression(const ObjectSharedPtr& right)
     {
         // TODOBB: swap dynamic_cast to static_cast once it's confirmed to work.
-        if (right->Type() == "bool")
+        if (right->Type() == ObjectTypes::BOOLEAN_OBJECT)
         {
             const auto boolObject{ dynamic_cast<BoolType*>(right.get()) };
             if (boolObject->mValue)
@@ -465,14 +467,7 @@ namespace interpreter::Evaluator
         else if (object->Type() == ObjectTypes::BOOLEAN_OBJECT)
         {
             // It might be better to just cast it and check the value.
-            if (object.get() == GetNativeBoolObject(true).get())
-            {
-                return true;
-            }
-            else
-            {
-                false;
-            }
+            return object.get() == GetNativeBoolObject(true).get() ? true : false;
         }
         else if (object->Type() == ObjectTypes::INTEGER_OBJECT)
         {
