@@ -58,6 +58,7 @@ namespace interpreter
 
     typedef std::unique_ptr<Object> ObjectUniquePtr;
     typedef std::shared_ptr<Object> ObjectSharedPtr;
+    typedef std::weak_ptr<Object> ObjectWeakPtr;
 
     typedef std::shared_ptr<Environment> EnvironmentSharedPtr;
 

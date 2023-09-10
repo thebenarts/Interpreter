@@ -94,7 +94,7 @@ namespace interpreter
 
         std::vector<ExpressionUniquePtr> mParameters;
         BlockStatementUniquePtr mBody;
-        std::weak_ptr<Environment> mEnvironment;
+        std::shared_ptr<Environment> mEnvironment;  // TODO: might need to refactor this. Prototyping to make higher order functions to work for now.
     };
 
     struct Environment : public std::unordered_map<std::string, ObjectSharedPtr>

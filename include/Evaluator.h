@@ -9,6 +9,11 @@
 
 namespace interpreter
 {
+    struct DebugObject
+    {
+        static std::vector<interpreter::ObjectWeakPtr>& GetDebugObjects();
+    };
+
     enum class TokenType;
     namespace ast
     {

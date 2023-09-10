@@ -239,7 +239,7 @@ namespace interpreter {
 
             // Variables
             Token mToken;   // "(" token
-            ExpressionUniquePtr mFunction;  // should hold FunctionExpression
+            ExpressionUniquePtr mFunction;  // should hold the name of the function being calledgtgt
             std::vector<ExpressionUniquePtr> mArguments;
         };
 

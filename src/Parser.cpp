@@ -559,7 +559,7 @@ namespace interpreter
                 return true;
             }
 
-            LOG(MessageType::ERRORS, "line -> ", peekToken->mLineNumber, "character range -> ", peekToken->mCharacterRange[0], ", ", peekToken->mCharacterRange[1], "expected next token to be -> ", expectedType, " actual type -> ",
+            LOG(MessageType::ERRORS, "line -> ", peekToken->mLineNumber, " character range -> (", peekToken->mCharacterRange[0], ",", peekToken->mCharacterRange[1], ") expected next token to be -> ", expectedType, " actual type -> ",
                 peekToken->mType);
         }
 

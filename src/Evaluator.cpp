@@ -5,6 +5,15 @@
 
 #include <ranges>
 
+namespace interpreter
+{
+    std::vector<interpreter::ObjectWeakPtr>& DebugObject::GetDebugObjects()
+    {
+        static std::vector<interpreter::ObjectWeakPtr> debugObjects;
+        return debugObjects;
+    }
+}
+
 namespace interpreter::Evaluator
 {
     ObjectSharedPtr Evaluate(ast::Node* node, const EnvironmentSharedPtr& env)
@@ -37,6 +46,7 @@ namespace interpreter::Evaluator
                     return value;
                 }
 
+                DebugObject::GetDebugObjects().push_back(value);    // TODO: Remove
                 VERIFY(letStatement->mIdentifier)
                 {
                     if (const auto identifier{ utility::GetAndValidateIdentifierIsFree(*letStatement->mIdentifier.get(),env) }; !identifier.empty())
@@ -202,10 +212,18 @@ namespace interpreter::Evaluator
     {
         ASSERT_AND_RETURN((function->Type() == ObjectTypes::FUNCTION_OBJECT), (NEW_ERROR("Not a function: ", function->Type())));
         const auto functionObject{ dynamic_cast<FunctionType*>(function.get()) };
-        if (const auto funcEnv{ functionObject->mEnvironment.lock() })
+        if (const auto & funcEnv{ functionObject->mEnvironment })
         {
             const auto extendedEnvironment{ ExtendFunctionEnvironment(*functionObject,std::move(arguments)) };
-            return UnwrapReturnValue(Evaluate(functionObject->mBody.get(), extendedEnvironment));
+            const auto returnObject{ UnwrapReturnValue(Evaluate(functionObject->mBody.get(), extendedEnvironment)) };
+
+            DebugObject::GetDebugObjects().push_back(returnObject);
+            // Due to lacking GC and still wanting to allow higher order functions we instantiate a new function object.
+            // This is to prevent holding on to unreachable data.
+            const auto originalEnvironment{ extendedEnvironment->mOuter };
+            functionObject->mEnvironment = originalEnvironment;
+
+            return returnObject;
         }
 
         return {};
@@ -213,7 +231,7 @@ namespace interpreter::Evaluator
 
     EnvironmentSharedPtr ExtendFunctionEnvironment(const FunctionType& function, std::vector<ObjectSharedPtr>&& arguments)
     {
-        if (const auto funcEnv{ function.mEnvironment.lock() })
+        if (const auto funcEnv{ function.mEnvironment })
         {
             const auto env{ Environment::NewEnclosedEnvironment(funcEnv) };
             for (uint32_t index{ 0 }; auto & param : function.mParameters)
@@ -500,7 +518,7 @@ namespace interpreter::Evaluator
     {
         if (object)
         {
-            VERIFY(object->Type() == ObjectTypes::RETURN_OBJECT)
+            if (object->Type() == ObjectTypes::RETURN_OBJECT)
             {
                 if (const auto returnObject{ dynamic_cast<ReturnType*>(object.get()) })
                 {

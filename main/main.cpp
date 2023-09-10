@@ -13,6 +13,7 @@
 
 int main()
 {
+    const auto& debugObjects{ interpreter::DebugObject::GetDebugObjects() };
     std::string input;
     interpreter::Logger::SetLoggerSeverity(interpreter::MessageType::WARNING);
     std::cout << "Current Path is " << std::filesystem::current_path() << '\n';
